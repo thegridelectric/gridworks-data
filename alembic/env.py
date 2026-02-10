@@ -12,25 +12,19 @@ from gdb.config import Settings
 # -----------------------------------------------------------------------------
 config = context.config
 
-dotenv.load_dotenv()
-settings = Settings()
-
 # Interpret config file for Python logging.
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-DATABASE_URL = settings.db_url.get_secret_value()
-config.set_main_option("sqlalchemy.url", DATABASE_URL)
 
 # -----------------------------------------------------------------------------
 # Database URL (from our pydantic Settings)
 # -----------------------------------------------------------------------------
+dotenv.load_dotenv()
 settings = Settings()
 db_url = settings.db_url.get_secret_value()
 config.set_main_option("sqlalchemy.url", db_url)
 
-# import gdb.db.models.position_point
-# import gdb.db.models.customer
 from gdb.db.models._base import Base
 target_metadata = Base.metadata
 

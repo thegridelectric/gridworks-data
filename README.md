@@ -1,6 +1,30 @@
 # Gridworks Db Models
 
 
+## Database Setup
+
+The recommended setup is as follows:
+
+### 1. Install PostgreSQL with TimescaleDB on a Docker image.
+
+Detailed instructions for this are online at: 
+https://www.tigerdata.com/docs/self-hosted/latest/install/installation-docker
+
+A few things to note:
+* Install the `latest/pg-18` version of the Docker image.
+* When building the container, you need to include a port mapping for 5432. If you are not already running a PostgreSQL instance on your machine than you can just map `5432:5432`. But if you are already running PostgreSQL (either with Docker or natively) you will need to select a different port (e.g. `5433:5432`). Whichever port you choose will need to be in the `GW_DB_URL` value in your `.env` file.
+* When building the container, you need to include a `POSTGRES_PASSWORD` env variable, which will be the password for the default `postgres` user.
+
+
+
+
+SQLAlchemy models for the GridNodeRegistry.
+
+Each SQL row corresponds to a serialized ASL GT snapshot.
+ASL types are used for validation (via the codec) before any insert/update.
+
+
+
 ```
 
 ## Requirements

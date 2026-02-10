@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import String
+from sqlalchemy import Integer
 from sqlalchemy.dialects.postgresql import JSONB
 
 from sqlalchemy.orm import (
@@ -12,5 +12,5 @@ from gdb.db.models._base import Base
 
 class InstallerSql(Base):
     __tablename__ = "installers"
-    id: Mapped[str] = mapped_column(String, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     info: Mapped[JSONB] = mapped_column(JSONB, nullable=False)

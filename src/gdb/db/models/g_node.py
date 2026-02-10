@@ -29,7 +29,8 @@ class GNodeSql(Base):
     prev_alias: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
     base_class: Mapped[BaseGNodeClass] = mapped_column(
-        Enum(BaseGNodeClass, name="base_g_node_class")
+        Enum(BaseGNodeClass, name="base_g_node_class"),
+        nullable=True
     )
 
     g_node_class: Mapped[str] = mapped_column(String)

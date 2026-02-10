@@ -7,6 +7,7 @@ from gdb.db.models.connectivity_edge import ConnectivityEdgeSql
 from gdb.db.models.customer import CustomerSql
 from gdb.db.models.installer import InstallerSql
 from gdb.db.models.user import UserSql
+from gdb.db.models.spaceheat_installation import SpaceheatInstallationSql
 
 from gdb.db.models.data_channel import DataChannelSql
 from gdb.db.models.message import MessageSql
@@ -29,6 +30,7 @@ __all__ = [
     "CustomerSql",
     "InstallerSql",
     "UserSql",
+    "SpaceheatInstallationSql",
     "DataChannelSql",
     "MessageSql",
     "ReadingSql"
