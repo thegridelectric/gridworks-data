@@ -1,7 +1,7 @@
 [project]
-name = "gdb"
+name = "gw_data"
 version = "0.1.0"
-description = "Gridworks Db Models"
+description = "Gridworks Data Infrastructure"
 readme = "README.md"
 authors = [
     { name = "Jessica Millar", email = "jessica.lynn.millar@gmail.com" }
@@ -18,7 +18,7 @@ dependencies = [
 ]
 
 [project.scripts]
-gdb = "gdb:main"
+gw_data = "gw_data:main"
 
 [build-system]
 requires = ["hatchling"]

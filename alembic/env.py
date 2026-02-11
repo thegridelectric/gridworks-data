@@ -4,7 +4,7 @@ import dotenv
 from sqlalchemy import engine_from_config, pool
 
 from alembic import context
-from gdb.config import Settings
+from gw_data.config import Settings
 
 
 # -----------------------------------------------------------------------------
@@ -25,7 +25,7 @@ settings = Settings()
 db_url = settings.db_url.get_secret_value()
 config.set_main_option("sqlalchemy.url", db_url)
 
-from gdb.db.models._base import Base
+from gw_data.db.models._base import Base
 target_metadata = Base.metadata
 
 

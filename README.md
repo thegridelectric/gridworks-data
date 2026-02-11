@@ -1,5 +1,8 @@
 # Gridworks Db Models
 
+Put stuff in here about:
+- Uuids for PKs
+- Dates/times in the DB and ASL
 
 ## Database Setup
 
@@ -38,7 +41,7 @@ Gridworks Db Models uses `pydantic-settings` for runtime configuration.
 
 All configuration is loaded through the `Settings` class:
 ```
-from gdb.settings import Settings
+from gw_data.settings import Settings
 import dotenv
 
 settings = Settings(_env_file=dotenv.find_dotenv())
@@ -64,7 +67,7 @@ uv run alembic upgrade head
 ## Logs
 By default, logs should be written to
 ```
-~/.local/state/gridworks/gdb/log/
+~/.local/state/gridworks/GW_DATA/log/
 ```
 This follows the GridWorks convention.
 
