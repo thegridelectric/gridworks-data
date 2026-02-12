@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Optional
 import uuid
 
 from sqlalchemy import (
+    func,
     Uuid,
     String,
     Enum,
@@ -41,7 +42,7 @@ class GNodeSql(Base):
         Enum(GNodeStatus, name="g_node_status")
     )
 
-    position_point_id: Mapped[Optional[str]] = mapped_column(
+    position_point_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         ForeignKey("position_points.id"), nullable=True
     )
     position_point: Mapped[Optional[PositionPointSql]] = relationship()
@@ -49,7 +50,7 @@ class GNodeSql(Base):
     display_name: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=datetime.now(timezone.utc)
+        DateTime(timezone=True), server_default=func.now()
     )
 
     # -------------------

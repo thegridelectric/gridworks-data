@@ -1,8 +1,10 @@
+from datetime import datetime
 import uuid
+
 from sqlalchemy import (
     Uuid,
     String,
-    Integer,
+    DateTime,
     ForeignKey,
     UniqueConstraint
 )
@@ -24,11 +26,10 @@ class DataChannelSql(Base):
 
     __tablename__ = "data_channels"
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True)
-    id: Mapped[str] = mapped_column(String, primary_key=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
     display_name: Mapped[str] = mapped_column(String, nullable=False)
 
-    start_s: Mapped[Integer] = mapped_column(Integer, nullable=True)
+    start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
     g_node_id: Mapped[str] = mapped_column(
         ForeignKey("g_nodes.id"),

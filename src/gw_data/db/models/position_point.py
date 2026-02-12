@@ -4,6 +4,7 @@ from datetime import datetime
 import uuid
 
 from sqlalchemy import (
+    func,
     Uuid,
     DateTime,
 )
@@ -26,7 +27,7 @@ class PositionPointSql(Base):
     longitude_micro_deg: Mapped[int] = mapped_column()
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=datetime.utcnow
+        DateTime(timezone=True), server_default=func.now()
     )
 
     def to_gt(self) -> PositionPointGt:

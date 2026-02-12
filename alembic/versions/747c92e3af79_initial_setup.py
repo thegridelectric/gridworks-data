@@ -1,8 +1,8 @@
 """initial setup
 
-Revision ID: 34c33974a005
+Revision ID: 747c92e3af79
 Revises: 
-Create Date: 2026-02-11 15:42:23.525797
+Create Date: 2026-02-11 18:02:53.880022
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = '34c33974a005'
+revision: str = '747c92e3af79'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -28,82 +28,77 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('installers',
-    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('info', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_table('messages',
+    sa.Column('id', sa.Uuid(), nullable=False),
+    sa.Column('from_g_node_alias', sa.String(), nullable=False),
+    sa.Column('message_created', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('message_persisted', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('message_type_name', sa.String(), nullable=False),
+    sa.Column('payload', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('from_g_node_alias', 'message_type_name', 'message_persisted', name='uq_from_type_message'),
+    timescaledb_hypertable={'time_column_name': 'message_created'}
+    )
     op.create_table('position_points',
-    sa.Column('id', sa.String(), nullable=False),
+    sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('latitude_micro_deg', sa.Integer(), nullable=False),
     sa.Column('longitude_micro_deg', sa.Integer(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('users',
-    sa.Column('id', sa.String(), nullable=False),
+    sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('info', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('g_nodes',
-    sa.Column('id', sa.String(), nullable=False),
+    sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('alias', sa.String(), nullable=False),
     sa.Column('prev_alias', sa.String(), nullable=True),
     sa.Column('base_class', sa.Enum('TerminalAsset', 'LeafTransactiveNode', 'ConnectivityNode', 'MarketMaker', 'Logical', name='base_g_node_class'), nullable=True),
     sa.Column('g_node_class', sa.String(), nullable=False),
     sa.Column('status', sa.Enum('Pending', 'Active', 'PermanentlyDeactivated', 'Suspended', name='g_node_status'), nullable=False),
-    sa.Column('position_point_id', sa.String(), nullable=True),
+    sa.Column('position_point_id', sa.Uuid(), nullable=True),
     sa.Column('display_name', sa.String(), nullable=True),
-    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['position_point_id'], ['position_points.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_g_nodes_alias'), 'g_nodes', ['alias'], unique=True)
     op.create_table('connectivity_edges',
     sa.Column('id', sa.Uuid(), nullable=False),
-    sa.Column('from_g_node_id', sa.String(), nullable=False),
-    sa.Column('to_g_node_id', sa.String(), nullable=False),
-    sa.Column('from_g_node_alias', sa.String(), nullable=False),
-    sa.Column('to_g_node_alias', sa.String(), nullable=False),
+    sa.Column('from_g_node_id', sa.Uuid(), nullable=False),
+    sa.Column('to_g_node_id', sa.Uuid(), nullable=False),
     sa.Column('status', sa.Enum('Pending', 'Active', 'PermanentlyDeactivated', 'Suspended', name='connectivity_edge_status'), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['from_g_node_id'], ['g_nodes.id'], ),
     sa.ForeignKeyConstraint(['to_g_node_id'], ['g_nodes.id'], ),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('from_g_node_id', 'to_g_node_id', name='uq_connectivity_edges_from_to')
     )
-    op.create_index(op.f('ix_connectivity_edges_from_g_node_alias'), 'connectivity_edges', ['from_g_node_alias'], unique=False)
     op.create_index(op.f('ix_connectivity_edges_from_g_node_id'), 'connectivity_edges', ['from_g_node_id'], unique=False)
-    op.create_index(op.f('ix_connectivity_edges_to_g_node_alias'), 'connectivity_edges', ['to_g_node_alias'], unique=False)
     op.create_index(op.f('ix_connectivity_edges_to_g_node_id'), 'connectivity_edges', ['to_g_node_id'], unique=False)
     op.create_table('data_channels',
-    sa.Column('id', sa.String(), nullable=False),
+    sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('display_name', sa.String(), nullable=False),
-    sa.Column('start_s', sa.Integer(), nullable=True),
-    sa.Column('g_node_id', sa.String(), nullable=False),
+    sa.Column('start_time', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('g_node_id', sa.Uuid(), nullable=False),
     sa.Column('telemetry_name', sa.String(), nullable=False),
     sa.ForeignKeyConstraint(['g_node_id'], ['g_nodes.id'], ),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('g_node_id', 'name', name='unique_name_g_node')
     )
-    op.create_table('messages',
-    sa.Column('id', sa.String(), nullable=False),
-    sa.Column('from_g_node_id', sa.String(), nullable=False),
-    sa.Column('message_created_ms', sa.BigInteger(), nullable=False),
-    sa.Column('message_persisted_ms', sa.BigInteger(), nullable=False),
-    sa.Column('message_type_name', sa.String(), nullable=False),
-    sa.Column('payload', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
-    sa.ForeignKeyConstraint(['from_g_node_id'], ['g_nodes.id'], ),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('from_g_node_id', 'message_type_name', 'message_persisted_ms', name='uq_from_type_message'),
-    timescaledb_hypertable={'time_column_name': 'message_created_ms', 'chunk_time_interval': 604800000}
-    )
     op.create_table('spaceheat_installations',
-    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
-    sa.Column('g_node_id', sa.String(), nullable=False),
+    sa.Column('id', sa.Uuid(), nullable=False),
+    sa.Column('g_node_id', sa.Uuid(), nullable=False),
     sa.Column('display_name', sa.String(), nullable=False),
     sa.Column('customer_id', sa.Uuid(), nullable=False),
-    sa.Column('installer_id', sa.Integer(), nullable=False),
+    sa.Column('installer_id', sa.Uuid(), nullable=False),
     sa.Column('address', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
     sa.Column('alert_status', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
     sa.Column('hardware_layout', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
@@ -117,15 +112,11 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('readings',
-    sa.Column('id', sa.String(), nullable=False),
-    sa.Column('data_channel_id', sa.String(), nullable=False),
-    sa.Column('message_id', sa.String(), nullable=False),
-    sa.Column('time_ms', sa.BigInteger(), nullable=False),
+    sa.Column('data_channel_id', sa.Uuid(), nullable=False),
+    sa.Column('message_id', sa.Uuid(), nullable=False),
+    sa.Column('timestamp', sa.DateTime(), nullable=False),
     sa.Column('value', sa.BigInteger(), nullable=False),
-    sa.ForeignKeyConstraint(['data_channel_id'], ['data_channels.id'], ),
-    sa.ForeignKeyConstraint(['message_id'], ['messages.id'], ),
-    sa.PrimaryKeyConstraint('id'),
-    timescaledb_hypertable={'time_column_name': 'time_ms', 'chunk_time_interval': 604800000}
+    sa.ForeignKeyConstraint(['data_channel_id'], ['data_channels.id'], )
     )
     op.create_index(op.f('ix_readings_message_id'), 'readings', ['message_id'], unique=False)
     # ### end Alembic commands ###
@@ -137,17 +128,15 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_readings_message_id'), table_name='readings')
     op.drop_table('readings')
     op.drop_table('spaceheat_installations')
-    op.drop_table('messages')
     op.drop_table('data_channels')
     op.drop_index(op.f('ix_connectivity_edges_to_g_node_id'), table_name='connectivity_edges')
-    op.drop_index(op.f('ix_connectivity_edges_to_g_node_alias'), table_name='connectivity_edges')
     op.drop_index(op.f('ix_connectivity_edges_from_g_node_id'), table_name='connectivity_edges')
-    op.drop_index(op.f('ix_connectivity_edges_from_g_node_alias'), table_name='connectivity_edges')
     op.drop_table('connectivity_edges')
     op.drop_index(op.f('ix_g_nodes_alias'), table_name='g_nodes')
     op.drop_table('g_nodes')
     op.drop_table('users')
     op.drop_table('position_points')
+    op.drop_table('messages')
     op.drop_table('installers')
     op.drop_table('customers')
     # ### end Alembic commands ###

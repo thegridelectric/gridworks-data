@@ -1,8 +1,10 @@
 from __future__ import annotations
+from datetime import datetime
 import uuid
 
 from sqlalchemy import (
     BigInteger,
+    DateTime,
     ForeignKey
 )
 
@@ -15,22 +17,26 @@ from gw_data.db.models._base import Base
 
 class ReadingSql(Base):
     __tablename__ = "readings"
-    __table_args__ = (
-        {
-            'timescaledb_hypertable': {
-                'time_column_name': 'time_ms',
-                'chunk_time_interval': 604800000 # 1 week
-            }
-        }
-    )
-    data_channel_id: Mapped[uuid.Uuid] = mapped_column(
+    data_channel_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("data_channels.id"),
         nullable=False
     )
-    message_id: Mapped[uuid.Uuid] = mapped_column(
-        ForeignKey("messages.id"),
+    # This is not a foreign key for two reasons:
+    #   1. TimescaleDB does not allow foreign keys between hypertables
+    #   2. We may conceivably have readings that do not have an associated message
+    #       (e.g., from a server cron job or an admin action)
+    #
+    # Also note that since they are both hypertables, any queries that map between readings and messages 
+    # should correlate based on time to improve performance.
+    message_id: Mapped[uuid.UUID] = mapped_column(
         nullable=False,
         index=True
     )
-    time_ms: Mapped[BigInteger] = mapped_column(BigInteger, nullable=False)
+    timestamp: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     value: Mapped[BigInteger] = mapped_column(BigInteger, nullable=False)
+
+    # This table does not need a true primary key -- but SQLAlchemy requires one.
+    # So we define a synthetic PK out of two columns that should always be unique. 
+    __mapper_args__ = {
+        "primary_key": [data_channel_id, timestamp]
+    }

@@ -27,13 +27,13 @@ class SpaceheatInstallationSql(Base):
         nullable=False
     )
     display_name: Mapped[str] = mapped_column(String, nullable=False)
-    customer_id: Mapped[str] = mapped_column(
+    customer_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("customers.id"),
         nullable=False
     )
     customer: Mapped[CustomerSql] = relationship()
 
-    installer_id: Mapped[str] = mapped_column(
+    installer_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("installers.id"),
         nullable=False
     )

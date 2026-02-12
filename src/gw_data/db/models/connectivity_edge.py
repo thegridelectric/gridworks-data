@@ -8,15 +8,15 @@ ASL types are used for validation (via the codec) before any insert/update.
 from __future__ import annotations
 import uuid
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import (
     Uuid,
-    String,
     Enum,
     DateTime,
     ForeignKey,
     UniqueConstraint,
+    func,
 )
 from sqlalchemy.orm import (
     Mapped,
@@ -33,22 +33,19 @@ class ConnectivityEdgeSql(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True)
 
-    from_g_node_id: Mapped[str] = mapped_column(
+    from_g_node_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("g_nodes.id"), index=True
     )
-    to_g_node_id: Mapped[str] = mapped_column(
+    to_g_node_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("g_nodes.id"), index=True
     )
-
-    from_g_node_alias: Mapped[str] = mapped_column(String, index=True)
-    to_g_node_alias: Mapped[str] = mapped_column(String, index=True)
 
     status: Mapped[GNodeStatus] = mapped_column(
         Enum(GNodeStatus, name="connectivity_edge_status")
     )
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=datetime.utcnow
+        DateTime(timezone=True), server_default=func.now()
     )
 
     __table_args__ = (
