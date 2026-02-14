@@ -1,8 +1,8 @@
 """initial setup
 
-Revision ID: 747c92e3af79
+Revision ID: 90d932ae1a17
 Revises: 
-Create Date: 2026-02-11 18:02:53.880022
+Create Date: 2026-02-13 15:53:01.477188
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = '747c92e3af79'
+revision: str = '90d932ae1a17'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -27,6 +27,19 @@ def upgrade() -> None:
     sa.Column('secondary_contact', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_table('data_channels',
+    sa.Column('id', sa.Uuid(), nullable=False),
+    sa.Column('name', sa.String(), nullable=False),
+    sa.Column('display_name', sa.String(), nullable=False),
+    sa.Column('about_node_name', sa.String(), nullable=False),
+    sa.Column('captured_by_node_name', sa.String(), nullable=False),
+    sa.Column('telemetry_name', sa.String(), nullable=False),
+    sa.Column('start_time', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('terminal_asset_alias', sa.String(), nullable=False),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('terminal_asset_alias', 'about_node_name', 'captured_by_node_name', 'telemetry_name', name='unique_triple_per_ta'),
+    sa.UniqueConstraint('terminal_asset_alias', 'name', name='unique_name_terminal_asset')
+    )
     op.create_table('installers',
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('info', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
@@ -34,15 +47,18 @@ def upgrade() -> None:
     )
     op.create_table('messages',
     sa.Column('id', sa.Uuid(), nullable=False),
-    sa.Column('from_g_node_alias', sa.String(), nullable=False),
-    sa.Column('message_created', sa.DateTime(timezone=True), nullable=False),
-    sa.Column('message_persisted', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('timestamp', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('from_alias', sa.String(), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), nullable=True),
+    sa.Column('persisted_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('message_type_name', sa.String(), nullable=False),
     sa.Column('payload', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('from_g_node_alias', 'message_type_name', 'message_persisted', name='uq_from_type_message'),
-    timescaledb_hypertable={'time_column_name': 'message_created'}
+    sa.PrimaryKeyConstraint('id', 'timestamp'),
+    timescaledb_hypertable={'time_column_name': 'timestamp'}
     )
+    op.create_index('ix_from_type_message', 'messages', ['from_alias', 'message_type_name', 'persisted_at'], unique=False)
+    op.create_index(op.f('ix_messages_timestamp'), 'messages', ['timestamp'], unique=False)
+    op.create_index('messages_timestamp_idx', 'messages', [sa.literal_column('timestamp DESC')], unique=False)
     op.create_table('position_points',
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('latitude_micro_deg', sa.Integer(), nullable=False),
@@ -69,6 +85,16 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_g_nodes_alias'), 'g_nodes', ['alias'], unique=True)
+    op.create_table('readings',
+    sa.Column('data_channel_id', sa.Uuid(), nullable=False),
+    sa.Column('message_id', sa.Uuid(), nullable=False),
+    sa.Column('timestamp', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('value', sa.BigInteger(), nullable=False),
+    sa.ForeignKeyConstraint(['data_channel_id'], ['data_channels.id'], )
+    )
+    op.create_index(op.f('ix_readings_message_id'), 'readings', ['message_id'], unique=False)
+    op.create_index(op.f('ix_readings_timestamp'), 'readings', ['timestamp'], unique=False)
+    op.create_index('readings_timestamp_idx', 'readings', [sa.literal_column('timestamp DESC')], unique=False)
     op.create_table('connectivity_edges',
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('from_g_node_id', sa.Uuid(), nullable=False),
@@ -82,17 +108,6 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_connectivity_edges_from_g_node_id'), 'connectivity_edges', ['from_g_node_id'], unique=False)
     op.create_index(op.f('ix_connectivity_edges_to_g_node_id'), 'connectivity_edges', ['to_g_node_id'], unique=False)
-    op.create_table('data_channels',
-    sa.Column('id', sa.Uuid(), nullable=False),
-    sa.Column('name', sa.String(), nullable=False),
-    sa.Column('display_name', sa.String(), nullable=False),
-    sa.Column('start_time', sa.DateTime(timezone=True), nullable=False),
-    sa.Column('g_node_id', sa.Uuid(), nullable=False),
-    sa.Column('telemetry_name', sa.String(), nullable=False),
-    sa.ForeignKeyConstraint(['g_node_id'], ['g_nodes.id'], ),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('g_node_id', 'name', name='unique_name_g_node')
-    )
     op.create_table('spaceheat_installations',
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('g_node_id', sa.Uuid(), nullable=False),
@@ -111,32 +126,45 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['installer_id'], ['installers.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_table('readings',
-    sa.Column('data_channel_id', sa.Uuid(), nullable=False),
-    sa.Column('message_id', sa.Uuid(), nullable=False),
-    sa.Column('timestamp', sa.DateTime(), nullable=False),
-    sa.Column('value', sa.BigInteger(), nullable=False),
-    sa.ForeignKeyConstraint(['data_channel_id'], ['data_channels.id'], )
-    )
-    op.create_index(op.f('ix_readings_message_id'), 'readings', ['message_id'], unique=False)
     # ### end Alembic commands ###
+
+    # Custom stuff for TimescaleDB
+    op.execute("SELECT create_hypertable('messages', by_range('timestamp'))")
+    op.execute("SELECT create_hypertable('readings', by_range('timestamp'))")
+    op.execute("""
+        ALTER TABLE readings SET(
+            timescaledb.enable_columnstore, 
+            timescaledb.orderby = 'timestamp DESC', 
+            timescaledb.segmentby = 'data_channel_id')
+    """)
 
 
 def downgrade() -> None:
     """Downgrade schema."""
     # ### commands auto generated by Alembic - please adjust! ###
-    op.drop_index(op.f('ix_readings_message_id'), table_name='readings')
-    op.drop_table('readings')
     op.drop_table('spaceheat_installations')
-    op.drop_table('data_channels')
     op.drop_index(op.f('ix_connectivity_edges_to_g_node_id'), table_name='connectivity_edges')
     op.drop_index(op.f('ix_connectivity_edges_from_g_node_id'), table_name='connectivity_edges')
     op.drop_table('connectivity_edges')
+    op.drop_index('readings_timestamp_idx', table_name='readings')
+    op.drop_index(op.f('ix_readings_timestamp'), table_name='readings')
+    op.drop_index(op.f('ix_readings_message_id'), table_name='readings')
+    op.drop_table('readings')
     op.drop_index(op.f('ix_g_nodes_alias'), table_name='g_nodes')
     op.drop_table('g_nodes')
     op.drop_table('users')
     op.drop_table('position_points')
+    op.drop_index('messages_timestamp_idx', table_name='messages')
+    op.drop_index(op.f('ix_messages_timestamp'), table_name='messages')
+    op.drop_index('ix_from_type_message', table_name='messages')
     op.drop_table('messages')
     op.drop_table('installers')
+    op.drop_table('data_channels')
     op.drop_table('customers')
     # ### end Alembic commands ###
+
+    # Alembic doesn't deal with types properly -- it creates them in the upgrade() but doesn't
+    # drop them in downgrade() so we need to add this ourselves.
+    op.execute('DROP TYPE base_g_node_class')
+    op.execute('DROP TYPE g_node_status')
+    op.execute('DROP TYPE connectivity_edge_status')

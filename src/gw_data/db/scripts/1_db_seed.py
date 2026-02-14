@@ -20,6 +20,7 @@ db_sessionmaker = sessionmaker(bind=engine)
 db_session = db_sessionmaker()
 
 default_installer = InstallerSql(
+    id = uuid.uuid4(),
     info = json.dumps({
         "company_name": "Paul Moscone's Heating Sales And Service"
     })
@@ -34,7 +35,7 @@ with open('seed_data/homes.csv', newline='') as csvfile:
         (short_alias, address, primary_contact, secondary_contact, hardware_layout, unique_id, g_node_alias, alert_status, representation_status, scada_ip_address, scada_git_commit, house_parameters, created_at) = row
 
         g_node = GNodeSql(
-            id = str(uuid.uuid4()),
+            id = uuid.uuid4(),
             alias = g_node_alias,
             base_class = None,
             g_node_class = BaseGNodeClass.LeafTransactiveNode,
@@ -45,16 +46,18 @@ with open('seed_data/homes.csv', newline='') as csvfile:
         db_session.add(g_node)
 
         customer = CustomerSql(
+            id = uuid.uuid4(),
             primary_contact = primary_contact,
             secondary_contact = secondary_contact,
         )
         db_session.add(customer)
 
         installation = SpaceheatInstallationSql(
+            id = uuid.uuid4(),
             g_node_id = g_node.id,
             display_name = short_alias,
-            customer = customer,
-            installer = default_installer,
+            customer_id = customer.id,
+            installer_id = default_installer.id,
             address = address,
             alert_status = alert_status,
             hardware_layout = hardware_layout,

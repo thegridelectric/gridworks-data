@@ -5,7 +5,8 @@ import uuid
 from sqlalchemy import (
     BigInteger,
     DateTime,
-    ForeignKey
+    ForeignKey,
+    Index
 )
 
 from sqlalchemy.orm import (
@@ -32,8 +33,13 @@ class ReadingSql(Base):
         nullable=False,
         index=True
     )
-    timestamp: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
     value: Mapped[BigInteger] = mapped_column(BigInteger, nullable=False)
+
+    __table_args__ = (
+        # TimescaleDB automatically creates this one; we need to include it so Alembic doesn't get confused
+        Index("readings_timestamp_idx", timestamp.desc()),
+    )
 
     # This table does not need a true primary key -- but SQLAlchemy requires one.
     # So we define a synthetic PK out of two columns that should always be unique. 

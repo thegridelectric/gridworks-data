@@ -3,11 +3,10 @@ from datetime import datetime
 import uuid
 
 from sqlalchemy import (
-    func,
     Uuid,
     String,
     DateTime,
-    UniqueConstraint
+    Index
 )
 from sqlalchemy.dialects.postgresql import JSONB
 
@@ -20,29 +19,33 @@ from gw_data.db.models._base import Base
 
 class MessageSql(Base):
     __tablename__ = "messages"
-    __table_args__ = (
-        UniqueConstraint(
-            "from_g_node_alias",
-            "message_type_name",
-            "message_persisted",
-            name="uq_from_type_message",
-        ),
-        {
-            'timescaledb_hypertable': {
-                'time_column_name': 'message_created',
-            }
-        }
-    )
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, primary_key=True, index=True)
 
-    # This is not a foreign key because we may receive messages from gnodes that are not yet in the database
-    from_g_node_alias: Mapped[str] = mapped_column(String, nullable=False)
+    # This is not a foreign key because we may receive messages from nodes that are not yet in the database
+    from_alias: Mapped[str] = mapped_column(String, nullable=False)
 
-    message_created: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    message_persisted: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+    persisted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     message_type_name: Mapped[str] = mapped_column(String, nullable=False)
     payload: Mapped[JSONB] = mapped_column(JSONB, nullable=False)
+
+    __table_args__ = (
+        # TimescaleDB automatically creates this one; we need to include it so Alembic doesn't get confused
+        Index("messages_timestamp_idx", timestamp.desc()),
+        Index(
+            "ix_from_type_message",
+            "from_alias",
+            "message_type_name",
+            "persisted_at"
+        ),
+        {
+            'timescaledb_hypertable': {
+                'time_column_name': 'timestamp',
+            }
+        }
+    )
 
     # def to_dict(self):
     #     d = {

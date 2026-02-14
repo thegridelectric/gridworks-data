@@ -6,6 +6,30 @@ Put stuff in here about:
 
 ## Database Setup
 
+Workflow:
+
+1. Run the _XX_drop_all.sql
+2. Run 0_server_init.sql
+3. Recreate alembic migrations
+4. Add the following custom SQL:
+```
+    op.execute("SELECT create_hypertable('messages', by_range('timestamp'))")
+    op.execute("SELECT create_hypertable('readings', by_range('timestamp'))")
+    op.execute("""
+        ALTER TABLE readings SET(
+            timescaledb.enable_columnstore, 
+            timescaledb.orderby = 'timestamp DESC', 
+            timescaledb.segmentby = 'data_channel_id')
+    """)
+```
+
+```
+    op.execute('DROP TYPE base_g_node_class')
+    op.execute('DROP TYPE g_node_status')
+    op.execute('DROP TYPE connectivity_edge_status')
+```
+
+
 The recommended setup is as follows:
 
 ### 1. Install PostgreSQL with TimescaleDB on a Docker image.

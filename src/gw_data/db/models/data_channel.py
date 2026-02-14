@@ -28,21 +28,25 @@ class DataChannelSql(Base):
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
     display_name: Mapped[str] = mapped_column(String, nullable=False)
-
-    start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-
-    g_node_id: Mapped[str] = mapped_column(
-        ForeignKey("g_nodes.id"),
-        nullable=False
-    )
-
+    about_node_name: Mapped[str] = mapped_column(String, nullable=False)
+    captured_by_node_name: Mapped[str] = mapped_column(String, nullable=False)
     telemetry_name: Mapped[str] = mapped_column(String, nullable=False)
+    start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    terminal_asset_alias: Mapped[str] = mapped_column(String, nullable=False)
 
     __table_args__ = (
         UniqueConstraint(
-            "g_node_id",
+            "terminal_asset_alias",
             "name",
-            name="unique_name_g_node",
+            name="unique_name_terminal_asset",
+        ),
+        # (about_node_name, captured_by_node_name, telemetry_name) is unique per terminal asset alias
+        UniqueConstraint(
+            "terminal_asset_alias",
+            "about_node_name",
+            "captured_by_node_name",
+            "telemetry_name",
+            name="unique_triple_per_ta",
         ),
     )
 
