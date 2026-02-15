@@ -46,15 +46,3 @@ class MessageSql(Base):
             }
         }
     )
-
-    # def to_dict(self):
-    #     d = {
-    #         "MessageId": self.id,
-    #         "FromAlias": self.from_g_node.alias,
-    #         "MessageTypeName": self.message_type_name,
-    #         "MessagePersistedMs": self.message_persisted_ms,
-    #         "Payload": self.payload,
-    #     }
-    #     if self.message_created_ms:
-    #         d["MessageCreatedMs"] = self.message_created_ms
-    #     return d

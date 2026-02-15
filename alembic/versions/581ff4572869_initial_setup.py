@@ -1,8 +1,8 @@
 """initial setup
 
-Revision ID: 90d932ae1a17
+Revision ID: 581ff4572869
 Revises: 
-Create Date: 2026-02-13 15:53:01.477188
+Create Date: 2026-02-15 11:29:08.879802
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = '90d932ae1a17'
+revision: str = '581ff4572869'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -35,6 +35,7 @@ def upgrade() -> None:
     sa.Column('captured_by_node_name', sa.String(), nullable=False),
     sa.Column('telemetry_name', sa.String(), nullable=False),
     sa.Column('start_time', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('in_power_metering', sa.Boolean(), nullable=True),
     sa.Column('terminal_asset_alias', sa.String(), nullable=False),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('terminal_asset_alias', 'about_node_name', 'captured_by_node_name', 'telemetry_name', name='unique_triple_per_ta'),
@@ -128,7 +129,6 @@ def upgrade() -> None:
     )
     # ### end Alembic commands ###
 
-    # Custom stuff for TimescaleDB
     op.execute("SELECT create_hypertable('messages', by_range('timestamp'))")
     op.execute("SELECT create_hypertable('readings', by_range('timestamp'))")
     op.execute("""
@@ -163,8 +163,6 @@ def downgrade() -> None:
     op.drop_table('customers')
     # ### end Alembic commands ###
 
-    # Alembic doesn't deal with types properly -- it creates them in the upgrade() but doesn't
-    # drop them in downgrade() so we need to add this ourselves.
     op.execute('DROP TYPE base_g_node_class')
     op.execute('DROP TYPE g_node_status')
     op.execute('DROP TYPE connectivity_edge_status')

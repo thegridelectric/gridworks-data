@@ -3,9 +3,9 @@ import uuid
 
 from sqlalchemy import (
     Uuid,
+    Boolean,
     String,
     DateTime,
-    ForeignKey,
     UniqueConstraint
 )
 
@@ -32,6 +32,7 @@ class DataChannelSql(Base):
     captured_by_node_name: Mapped[str] = mapped_column(String, nullable=False)
     telemetry_name: Mapped[str] = mapped_column(String, nullable=False)
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    in_power_metering: Mapped[bool] = mapped_column(Boolean, nullable=True)
     terminal_asset_alias: Mapped[str] = mapped_column(String, nullable=False)
 
     __table_args__ = (
@@ -50,13 +51,27 @@ class DataChannelSql(Base):
         ),
     )
 
-    def to_dict(self):
-        d = {
-            "Id": self.id,
-            "Name": self.name,
-            "DisplayName": self.display_name,
-            "TelemetryName": self.telemetry_name,
-        }
-        if self.start_s:
-            d["StartS"] = self.start_s
-        return d
+    def __repr__(self):
+        ta_short = self.terminal_asset_alias.split(".")[-2]
+        power_metering_status = (
+            "IN POWER METERING: \n" if self.in_power_metering else ""
+        )
+        return (
+            f"{power_metering_status}"
+            f"<DataChannelSql(name='{self.name}', "
+            f"about_node_name='{self.about_node_name}', captured_by_node_name='{self.captured_by_node_name}', "
+            f"telemetry_name='{self.telemetry_name}', terminal asset: {ta_short}>"
+        )
+
+    def __str__(self):
+        ta_short = self.terminal_asset_alias.split(".")[-2]
+        power_metering_status = (
+            "IN POWER METERING: \n" if self.in_power_metering else ""
+        )
+        return (
+            f"{power_metering_status}"
+            f"DataChannel(name:{self.name},"
+            f"about_node_name: {self.about_node_name}, captured_by_node_name: {self.captured_by_node_name}, "
+            f"telemetry_name: {self.telemetry_name}, terminal asset: {ta_short}"
+        )
+
