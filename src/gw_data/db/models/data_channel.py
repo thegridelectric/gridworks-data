@@ -31,7 +31,7 @@ class DataChannelSql(Base):
     about_node_name: Mapped[str] = mapped_column(String, nullable=False)
     captured_by_node_name: Mapped[str] = mapped_column(String, nullable=False)
     telemetry_name: Mapped[str] = mapped_column(String, nullable=False)
-    start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
     in_power_metering: Mapped[bool] = mapped_column(Boolean, nullable=True)
     terminal_asset_alias: Mapped[str] = mapped_column(String, nullable=False)
 

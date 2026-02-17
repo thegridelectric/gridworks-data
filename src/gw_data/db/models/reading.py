@@ -6,7 +6,8 @@ from sqlalchemy import (
     BigInteger,
     DateTime,
     ForeignKey,
-    Index
+    Index,
+    UniqueConstraint
 )
 
 from sqlalchemy.orm import (
@@ -39,6 +40,7 @@ class ReadingSql(Base):
     __table_args__ = (
         # TimescaleDB automatically creates this one; we need to include it so Alembic doesn't get confused
         Index("readings_timestamp_idx", timestamp.desc()),
+        UniqueConstraint("data_channel_id", "timestamp", name="readings_data_channel_id_timestamp_key")
     )
 
     # This table does not need a true primary key -- but SQLAlchemy requires one.
@@ -46,3 +48,4 @@ class ReadingSql(Base):
     __mapper_args__ = {
         "primary_key": [data_channel_id, timestamp]
     }
+

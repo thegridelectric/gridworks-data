@@ -1,8 +1,8 @@
 """initial setup
 
-Revision ID: 581ff4572869
+Revision ID: df1b22a27742
 Revises: 
-Create Date: 2026-02-15 11:29:08.879802
+Create Date: 2026-02-16 19:12:17.788773
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = '581ff4572869'
+revision: str = 'df1b22a27742'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -34,7 +34,7 @@ def upgrade() -> None:
     sa.Column('about_node_name', sa.String(), nullable=False),
     sa.Column('captured_by_node_name', sa.String(), nullable=False),
     sa.Column('telemetry_name', sa.String(), nullable=False),
-    sa.Column('start_time', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('start_time', sa.DateTime(timezone=True), nullable=True),
     sa.Column('in_power_metering', sa.Boolean(), nullable=True),
     sa.Column('terminal_asset_alias', sa.String(), nullable=False),
     sa.PrimaryKeyConstraint('id'),
@@ -91,7 +91,8 @@ def upgrade() -> None:
     sa.Column('message_id', sa.Uuid(), nullable=False),
     sa.Column('timestamp', sa.DateTime(timezone=True), nullable=False),
     sa.Column('value', sa.BigInteger(), nullable=False),
-    sa.ForeignKeyConstraint(['data_channel_id'], ['data_channels.id'], )
+    sa.ForeignKeyConstraint(['data_channel_id'], ['data_channels.id'], ),
+    sa.UniqueConstraint('data_channel_id', 'timestamp', name='readings_data_channel_id_timestamp_key')
     )
     op.create_index(op.f('ix_readings_message_id'), 'readings', ['message_id'], unique=False)
     op.create_index(op.f('ix_readings_timestamp'), 'readings', ['timestamp'], unique=False)
@@ -162,7 +163,6 @@ def downgrade() -> None:
     op.drop_table('data_channels')
     op.drop_table('customers')
     # ### end Alembic commands ###
-
     op.execute('DROP TYPE base_g_node_class')
     op.execute('DROP TYPE g_node_status')
     op.execute('DROP TYPE connectivity_edge_status')

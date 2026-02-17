@@ -1,6 +1,6 @@
 [project]
 name = "gw_data"
-version = "0.1.5"
+version = "0.1.6"
 description = "Gridworks Data Infrastructure"
 readme = "README.md"
 authors = [
