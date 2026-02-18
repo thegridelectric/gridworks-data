@@ -216,9 +216,9 @@ version: Literal["002"] = "002"
 # Codec handles old versions transparently
 ```
 
-## Database Persistence with models.py
+## Database Persistence with ORM models
 
-When ASL messages need database storage, `models.py` provides SQLAlchemy ORM mappings. This separation of concerns means:
+When ASL messages need database storage, the `models` folders provides SQLAlchemy ORM mappings. This separation of concerns means:
 
 - **ASL types** define the message contract (what goes on the wire)
 - **ORM models** define storage optimization (how it's queried)
@@ -281,3 +281,30 @@ While full testing of the types can be provided to go in another non-production 
 ```bash
 python asl/tests/ -v
 ```
+
+## Next steps.
+  1. Add history functionality (in both ASL and the database) 
+  2. Enforce core invariants that aren't caught by ASL
+     - Alias Uniqueness through time
+     - Active GNode tree must be parent-closed
+     - Active physical GNode subtree must be parent-closed
+     - **ConnectivityEdge consistency** GNodeIds and Aliases match
+     - **ConnectivityEdge coverage**
+   That is, For every non-root physical GNode with alias A:
+
+```
+For every non-root GNode with alias A:
+    Let P = parent alias of A
+    The registry MUST contain exactly one ConnectivityEdge
+    with FromGNodeId = <UUID(P)> AND ToGNodeId = <UUID(A)>
+```
+
+ 3. Manage lifecycle states
+    - **GNodeStatus**
+       - Pending -> Active only
+       - Active -> {Suspended, PermanentlyDeactivated}
+       - Suspended -> {Active, PermanentlyDeactivated}
+       - PermanentlyDeactivated -> no change
+    - **BaseGNodeClass**  ConnectivityNode <-> MarketMaker 
+ 4. Implement API Endpoints (FastAPI)
+ 5. Set up tests & CI

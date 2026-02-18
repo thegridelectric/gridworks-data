@@ -130,14 +130,18 @@ def upgrade() -> None:
     )
     # ### end Alembic commands ###
 
+    # TimescaleDB setup for messages and readings
     op.execute("SELECT create_hypertable('messages', by_range('timestamp'))")
     op.execute("SELECT create_hypertable('readings', by_range('timestamp'))")
+
+    # Use the column store for readings data older than 2 weeks (for efficient analytics and disk usage)
     op.execute("""
         ALTER TABLE readings SET(
             timescaledb.enable_columnstore, 
             timescaledb.orderby = 'timestamp DESC', 
             timescaledb.segmentby = 'data_channel_id')
     """)
+    op.execute("CALL add_columnstore_policy('readings', INTERVAL '2 weeks')")
 
 
 def downgrade() -> None:
@@ -163,6 +167,8 @@ def downgrade() -> None:
     op.drop_table('data_channels')
     op.drop_table('customers')
     # ### end Alembic commands ###
+
+    # Alembic doesn't automatically drop the types it creates.
     op.execute('DROP TYPE base_g_node_class')
     op.execute('DROP TYPE g_node_status')
     op.execute('DROP TYPE connectivity_edge_status')

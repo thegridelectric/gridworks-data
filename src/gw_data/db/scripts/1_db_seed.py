@@ -1,6 +1,7 @@
 import csv
 import dotenv
 import json
+import os
 import uuid
 
 from sqlalchemy import create_engine
@@ -22,12 +23,13 @@ db_session = db_sessionmaker()
 default_installer = InstallerSql(
     id = uuid.uuid4(),
     info = json.dumps({
-        "company_name": "Paul Moscone's Heating Sales And Service"
+        "company_name": "Millinocket Heating Installers"
     })
 )
 db_session.add(default_installer)
 
-with open('seed_data/homes.csv', newline='') as csvfile:
+file_path = os.path.join(os.path.dirname(__file__), './seed_data/homes.csv')
+with open(file_path, newline='') as csvfile:
     csv_reader = csv.reader(csvfile, delimiter=',', quotechar='"')
     next(csv_reader) # Skip the header row
     for row in csv_reader:

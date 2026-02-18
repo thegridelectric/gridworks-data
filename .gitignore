@@ -87,6 +87,3 @@ cython_debug/
 
 # Ruff stuff:
 .ruff_cache/
-
-# Seed data
-seed_data/*
