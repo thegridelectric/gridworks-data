@@ -13,9 +13,11 @@ from sqlalchemy import (
 from sqlalchemy.orm import (
     Mapped,
     mapped_column,
+    relationship,
 )
 
 from gw_data.db.models._base import Base
+from gw_data.db.models.data_channel import DataChannelSql
 
 class ReadingSql(Base):
     __tablename__ = "readings"
@@ -23,6 +25,8 @@ class ReadingSql(Base):
         ForeignKey("data_channels.id"),
         nullable=False
     )
+    data_channel: Mapped[DataChannelSql] = relationship()
+
     # This is not a foreign key for two reasons:
     #   1. TimescaleDB does not allow foreign keys between hypertables
     #   2. We may conceivably have readings that do not have an associated message
