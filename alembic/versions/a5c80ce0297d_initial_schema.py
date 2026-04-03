@@ -1,8 +1,8 @@
-"""initial setup
+"""initial schema
 
-Revision ID: df1b22a27742
+Revision ID: a5c80ce0297d
 Revises: 
-Create Date: 2026-02-16 19:12:17.788773
+Create Date: 2026-04-02 16:51:00.282604
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = 'df1b22a27742'
+revision: str = 'a5c80ce0297d'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -26,20 +26,6 @@ def upgrade() -> None:
     sa.Column('primary_contact', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
     sa.Column('secondary_contact', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
     sa.PrimaryKeyConstraint('id')
-    )
-    op.create_table('data_channels',
-    sa.Column('id', sa.Uuid(), nullable=False),
-    sa.Column('name', sa.String(), nullable=False),
-    sa.Column('display_name', sa.String(), nullable=False),
-    sa.Column('about_node_name', sa.String(), nullable=False),
-    sa.Column('captured_by_node_name', sa.String(), nullable=False),
-    sa.Column('telemetry_name', sa.String(), nullable=False),
-    sa.Column('start_time', sa.DateTime(timezone=True), nullable=True),
-    sa.Column('in_power_metering', sa.Boolean(), nullable=True),
-    sa.Column('terminal_asset_alias', sa.String(), nullable=False),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('terminal_asset_alias', 'about_node_name', 'captured_by_node_name', 'telemetry_name', name='unique_triple_per_ta'),
-    sa.UniqueConstraint('terminal_asset_alias', 'name', name='unique_name_terminal_asset')
     )
     op.create_table('installers',
     sa.Column('id', sa.Uuid(), nullable=False),
@@ -67,10 +53,35 @@ def upgrade() -> None:
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_table('reading_channels',
+    sa.Column('id', sa.Uuid(), nullable=False),
+    sa.Column('name', sa.String(), nullable=False),
+    sa.Column('terminal_asset_alias', sa.String(), nullable=False),
+    sa.Column('display_name', sa.String(), nullable=False),
+    sa.Column('unit', sa.String(), nullable=False),
+    sa.Column('unit_type', sa.String(), nullable=False),
+    sa.Column('channel_type', sa.String(), nullable=False),
+    sa.Column('start_time', sa.DateTime(timezone=True), nullable=True),
+    sa.Column('in_power_metering', sa.Boolean(), nullable=True),
+    sa.Column('about_node_name', sa.String(), nullable=False),
+    sa.Column('captured_by_node_name', sa.String(), nullable=False),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('terminal_asset_alias', 'name', name='unique_name_terminal_asset')
+    )
+    op.create_index('terminal_asset_alias', 'reading_channels', ['name'], unique=False)
     op.create_table('users',
     sa.Column('id', sa.Uuid(), nullable=False),
-    sa.Column('info', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
-    sa.PrimaryKeyConstraint('id')
+    sa.Column('username', sa.String(length=50), nullable=False),
+    sa.Column('email', sa.String(length=100), nullable=False),
+    sa.Column('hashed_password', sa.String(length=255), nullable=False),
+    sa.Column('is_active', sa.Boolean(), nullable=False),
+    sa.Column('is_admin', sa.Boolean(), nullable=False),
+    sa.Column('last_login', sa.DateTime(timezone=True), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('email'),
+    sa.UniqueConstraint('username')
     )
     op.create_table('g_nodes',
     sa.Column('id', sa.Uuid(), nullable=False),
@@ -87,12 +98,12 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_g_nodes_alias'), 'g_nodes', ['alias'], unique=True)
     op.create_table('readings',
-    sa.Column('data_channel_id', sa.Uuid(), nullable=False),
+    sa.Column('channel_id', sa.Uuid(), nullable=False),
     sa.Column('message_id', sa.Uuid(), nullable=False),
     sa.Column('timestamp', sa.DateTime(timezone=True), nullable=False),
     sa.Column('value', sa.BigInteger(), nullable=False),
-    sa.ForeignKeyConstraint(['data_channel_id'], ['data_channels.id'], ),
-    sa.UniqueConstraint('data_channel_id', 'timestamp', name='readings_data_channel_id_timestamp_key')
+    sa.ForeignKeyConstraint(['channel_id'], ['reading_channels.id'], ),
+    sa.UniqueConstraint('channel_id', 'timestamp', name='readings_channel_id_timestamp_key')
     )
     op.create_index(op.f('ix_readings_message_id'), 'readings', ['message_id'], unique=False)
     op.create_index(op.f('ix_readings_timestamp'), 'readings', ['timestamp'], unique=False)
@@ -139,7 +150,7 @@ def upgrade() -> None:
         ALTER TABLE readings SET(
             timescaledb.enable_columnstore, 
             timescaledb.orderby = 'timestamp DESC', 
-            timescaledb.segmentby = 'data_channel_id')
+            timescaledb.segmentby = 'channel_id')
     """)
     op.execute("CALL add_columnstore_policy('readings', INTERVAL '2 weeks')")
 
@@ -158,16 +169,17 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_g_nodes_alias'), table_name='g_nodes')
     op.drop_table('g_nodes')
     op.drop_table('users')
+    op.drop_index('terminal_asset_alias', table_name='reading_channels')
+    op.drop_table('reading_channels')
     op.drop_table('position_points')
     op.drop_index('messages_timestamp_idx', table_name='messages')
     op.drop_index(op.f('ix_messages_timestamp'), table_name='messages')
     op.drop_index('ix_from_type_message', table_name='messages')
     op.drop_table('messages')
     op.drop_table('installers')
-    op.drop_table('data_channels')
     op.drop_table('customers')
     # ### end Alembic commands ###
-
+    
     # Alembic doesn't automatically drop the types it creates.
     op.execute('DROP TYPE base_g_node_class')
     op.execute('DROP TYPE g_node_status')

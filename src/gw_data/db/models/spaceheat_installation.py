@@ -39,11 +39,11 @@ class SpaceheatInstallationSql(Base):
     )
     installer: Mapped[InstallerSql] = relationship()
 
-    address: Mapped[JSONB] = mapped_column(JSONB, nullable=False)
-    alert_status: Mapped[JSONB] = mapped_column(JSONB, nullable=False)
-    hardware_layout: Mapped[JSONB] = mapped_column(JSONB, nullable=False)
-    representation_status: Mapped[JSONB] = mapped_column(JSONB, nullable=True)
-    house_parameters: Mapped[JSONB] = mapped_column(JSONB, nullable=True)
+    address: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    alert_status: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    hardware_layout: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    representation_status: Mapped[dict] = mapped_column(JSONB, nullable=True)
+    house_parameters: Mapped[dict] = mapped_column(JSONB, nullable=True)
     scada_ip_address: Mapped[str] = mapped_column(String, nullable=True)
     scada_git_commit: Mapped[str] = mapped_column(String, nullable=True)
 

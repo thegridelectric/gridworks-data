@@ -9,7 +9,7 @@ from gw_data.db.models.installer import InstallerSql
 from gw_data.db.models.user import UserSql
 from gw_data.db.models.spaceheat_installation import SpaceheatInstallationSql
 
-from gw_data.db.models.data_channel import DataChannelSql
+from gw_data.db.models.reading_channel import ReadingChannelSql
 from gw_data.db.models.message import MessageSql
 from gw_data.db.models.reading import ReadingSql
 
@@ -31,7 +31,7 @@ __all__ = [
     "InstallerSql",
     "UserSql",
     "SpaceheatInstallationSql",
-    "DataChannelSql",
+    "ReadingChannelSql",
     "MessageSql",
     "ReadingSql"
 ]

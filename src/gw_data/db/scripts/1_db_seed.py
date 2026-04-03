@@ -34,7 +34,7 @@ with open(file_path, newline='') as csvfile:
     next(csv_reader) # Skip the header row
     for row in csv_reader:
         # "short_alias","address","primary_contact","secondary_contact","hardware_layout","unique_id","g_node_alias","alert_status","representation_status","scada_ip_address","scada_git_commit","house_parameters","created_at"
-        (short_alias, address, primary_contact, secondary_contact, hardware_layout, unique_id, g_node_alias, alert_status, representation_status, scada_ip_address, scada_git_commit, house_parameters, created_at) = row
+        (short_alias, address_json, primary_contact_json, secondary_contact_json, hardware_layout_json, unique_id, g_node_alias, alert_status_json, representation_status_json, scada_ip_address, scada_git_commit, house_parameters_json, created_at) = row
 
         g_node = GNodeSql(
             id = uuid.uuid4(),
@@ -49,8 +49,8 @@ with open(file_path, newline='') as csvfile:
 
         customer = CustomerSql(
             id = uuid.uuid4(),
-            primary_contact = primary_contact,
-            secondary_contact = secondary_contact,
+            primary_contact = json.loads(primary_contact_json),
+            secondary_contact = json.loads(secondary_contact_json),
         )
         db_session.add(customer)
 
@@ -60,11 +60,11 @@ with open(file_path, newline='') as csvfile:
             display_name = short_alias,
             customer_id = customer.id,
             installer_id = default_installer.id,
-            address = address,
-            alert_status = alert_status,
-            hardware_layout = hardware_layout,
-            representation_status = representation_status,
-            house_parameters = house_parameters,
+            address = json.loads(address_json),
+            alert_status = json.loads(alert_status_json),
+            hardware_layout = json.loads(hardware_layout_json),
+            representation_status = json.loads(representation_status_json),
+            house_parameters = json.loads(house_parameters_json),
             scada_ip_address = scada_ip_address,
             scada_git_commit = scada_git_commit
         )    

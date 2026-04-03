@@ -17,15 +17,15 @@ from sqlalchemy.orm import (
 )
 
 from gw_data.db.models._base import Base
-from gw_data.db.models.data_channel import DataChannelSql
+from gw_data.db.models.reading_channel import ReadingChannelSql
 
 class ReadingSql(Base):
     __tablename__ = "readings"
-    data_channel_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("data_channels.id"),
+    channel_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("reading_channels.id"),
         nullable=False
     )
-    data_channel: Mapped[DataChannelSql] = relationship()
+    channel: Mapped[ReadingChannelSql] = relationship()
 
     # This is not a foreign key for two reasons:
     #   1. TimescaleDB does not allow foreign keys between hypertables
@@ -44,12 +44,12 @@ class ReadingSql(Base):
     __table_args__ = (
         # TimescaleDB automatically creates this one; we need to include it so Alembic doesn't get confused
         Index("readings_timestamp_idx", timestamp.desc()),
-        UniqueConstraint("data_channel_id", "timestamp", name="readings_data_channel_id_timestamp_key")
+        UniqueConstraint("channel_id", "timestamp", name="readings_channel_id_timestamp_key")
     )
 
     # This table does not need a true primary key -- but SQLAlchemy requires one.
     # So we define a synthetic PK out of two columns that should always be unique. 
     __mapper_args__ = {
-        "primary_key": [data_channel_id, timestamp]
+        "primary_key": [channel_id, timestamp]
     }
 
