@@ -6,14 +6,14 @@ DEFAULT_ENV_FILE = ".env"
 
 class Settings(BaseSettings):
     db_url: SecretStr = SecretStr(
-        "postgresql+psycopg://gdb:gdbpass@localhost:5432/gdb"
+        "postgresql+psycopg://gw_admin@localhost:5432/gridworks"
     )
     log_level: str = "INFO"
-    log_dir: str = "~/.local/state/gridworks/gdb/log"
+    log_dir: str = "~/.local/state/gridworks/gw_data/log"
     db_echo: bool = False
 
     model_config = ConfigDict(
-        env_prefix="gdb_",
+        env_prefix="gw_data_",
         env_nested_delimiter="__",
         extra="ignore",
     )

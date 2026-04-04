@@ -1,7 +1,7 @@
 [project]
-name = "gdb"
-version = "0.1.0"
-description = "Gridworks Db Models"
+name = "gw_data"
+version = "0.1.8"
+description = "Gridworks Data Infrastructure"
 readme = "README.md"
 authors = [
     { name = "Jessica Millar", email = "jessica.lynn.millar@gmail.com" }
@@ -13,11 +13,12 @@ dependencies = [
     "psycopg[binary]>=3.1",
     "pydantic-settings>=2.12.0",
     "sqlalchemy>=2.0.44",
+    "sqlalchemy-timescaledb>=0.4.1",
     "uvicorn[standard]>=0.38.0",
 ]
 
 [project.scripts]
-gdb = "gdb:main"
+gw_data = "gw_data:main"
 
 [build-system]
 requires = ["hatchling"]

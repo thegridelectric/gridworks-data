@@ -1,16 +1,10 @@
-import sys
 from logging.config import fileConfig
 
+import dotenv
 from sqlalchemy import engine_from_config, pool
+
 from alembic import context
-
-# Add project root to sys.path
-from pathlib import Path
-root_path = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(root_path))
-
-from gdb.config import Settings
-from gdb.db.models import Base  # SQLAlchemy metadata
+from gw_data.config import Settings
 
 
 # -----------------------------------------------------------------------------
@@ -22,14 +16,17 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-target_metadata = Base.metadata
 
 # -----------------------------------------------------------------------------
 # Database URL (from our pydantic Settings)
 # -----------------------------------------------------------------------------
+dotenv.load_dotenv()
 settings = Settings()
 db_url = settings.db_url.get_secret_value()
 config.set_main_option("sqlalchemy.url", db_url)
+
+from gw_data.db.models._base import Base
+target_metadata = Base.metadata
 
 
 # -----------------------------------------------------------------------------
