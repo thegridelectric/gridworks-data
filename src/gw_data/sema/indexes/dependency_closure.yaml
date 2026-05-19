@@ -1,0 +1,19 @@
+# GENERATED FILE - DO NOT EDIT
+# Generated from definitions/registry.yaml
+
+types:
+  g.node.gt:
+    '004':
+      enums:
+      - base.g.node.class:000
+      - g.node.status:000
+      formats:
+      - left.right.dot
+      - uuid4.str
+      types: []
+  position.point.gt:
+    '000':
+      enums: []
+      formats:
+      - uuid4.str
+      types: []

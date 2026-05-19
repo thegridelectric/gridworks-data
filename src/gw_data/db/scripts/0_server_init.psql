@@ -1,0 +1,22 @@
+CREATE DATABASE gridworks;
+
+CREATE USER gw_admin;
+GRANT ALL ON DATABASE gridworks TO gw_admin; 
+ALTER DATABASE gridworks OWNER TO gw_admin;
+\password gw_admin
+
+\c gridworks
+
+CREATE USER gw_writer;
+GRANT CONNECT ON DATABASE gridworks TO gw_writer;
+GRANT USAGE ON SCHEMA public TO gw_writer;
+ALTER DEFAULT PRIVILEGES FOR ROLE gw_admin GRANT SELECT,INSERT,UPDATE,DELETE ON TABLES TO gw_writer;
+ALTER DEFAULT PRIVILEGES FOR ROLE gw_admin GRANT ALL PRIVILEGES ON SEQUENCES TO gw_writer;
+\password gw_writer
+
+CREATE USER gw_reader;
+GRANT CONNECT ON DATABASE gridworks TO gw_reader;
+GRANT USAGE ON SCHEMA public TO gw_reader;
+ALTER DEFAULT PRIVILEGES FOR ROLE gw_admin GRANT SELECT ON TABLES TO gw_reader;
+ALTER DEFAULT PRIVILEGES FOR ROLE gw_admin GRANT ALL PRIVILEGES ON SEQUENCES TO gw_reader;
+\password gw_reader

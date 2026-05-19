@@ -1,0 +1,6 @@
+enums:
+  base.g.node.class: base.g.node.class
+  g.node.status: g.node.status
+types:
+  g.node.gt: g.node.gt
+  position.point.gt: position.point.gt

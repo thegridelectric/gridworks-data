@@ -16,16 +16,19 @@ from sqlalchemy.orm import (
 
 from gw_data.db.models._base import Base
 from gw_data.db.models.customer import CustomerSql
+from gw_data.db.models.g_node import GNodeSql
 from gw_data.db.models.installer import InstallerSql
 
-class SpaceheatInstallationSql(Base):
-    __tablename__ = "spaceheat_installations"
+class InstallationSql(Base):
+    __tablename__ = "installations"
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True)
     g_node_id: Mapped[str] = mapped_column(
         ForeignKey("g_nodes.id"),
         nullable=False
     )
+    g_node: Mapped[GNodeSql] = relationship(lazy="joined")
+
     display_name: Mapped[str] = mapped_column(String, nullable=False)
     customer_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("customers.id"),

@@ -18,11 +18,9 @@ from sqlalchemy.orm import (
     relationship,
 )
 
-from gw_data.asl.enums import GNodeStatus, BaseGNodeClass
-from gw_data.asl.types import GNodeGt
-
 from gw_data.db.models._base import Base
 from gw_data.db.models.position_point import PositionPointSql
+from gw_data.sema.enums import BaseGNodeClass, GNodeStatus
 
 class GNodeSql(Base):
     __tablename__ = "g_nodes"
@@ -53,33 +51,33 @@ class GNodeSql(Base):
         DateTime(timezone=True), server_default=func.now()
     )
 
-    # -------------------
-    #  ASL ↔ SQL Helpers
-    # -------------------
+    # # -------------------
+    # #  ASL ↔ SQL Helpers
+    # # -------------------
 
-    def to_gt(self) -> GNodeGt:
-        """Serialize SQL row → ASL GT."""
-        return GNodeGt(
-            g_node_id=self.id,
-            alias=self.alias,
-            base_class=self.base_class,
-            g_node_class=self.g_node_class,
-            status=self.status,
-            prev_alias=self.prev_alias,
-            position_point_id=self.position_point_id,
-            display_name=self.display_name,
-        )
+    # def to_gt(self) -> GNodeGt:
+    #     """Serialize SQL row → ASL GT."""
+    #     return GNodeGt(
+    #         g_node_id=self.id,
+    #         alias=self.alias,
+    #         base_class=self.base_class,
+    #         g_node_class=self.g_node_class,
+    #         status=self.status,
+    #         prev_alias=self.prev_alias,
+    #         position_point_id=self.position_point_id,
+    #         display_name=self.display_name,
+    #     )
 
-    @staticmethod
-    def from_gt(gt: GNodeGt) -> "GNodeSql":
-        """Create SQL model from an ASL GT instance (already validated)."""
-        return GNodeSql(
-            id=gt.g_node_id,
-            alias=gt.alias,
-            prev_alias=gt.prev_alias,
-            base_class=gt.base_class,
-            g_node_class=gt.g_node_class,
-            status=gt.status,
-            position_point_id=gt.position_point_id,
-            display_name=gt.display_name,
-        )
+    # @staticmethod
+    # def from_gt(gt: GNodeGt) -> "GNodeSql":
+    #     """Create SQL model from an ASL GT instance (already validated)."""
+    #     return GNodeSql(
+    #         id=gt.g_node_id,
+    #         alias=gt.alias,
+    #         prev_alias=gt.prev_alias,
+    #         base_class=gt.base_class,
+    #         g_node_class=gt.g_node_class,
+    #         status=gt.status,
+    #         position_point_id=gt.position_point_id,
+    #         display_name=gt.display_name,
+    #     )

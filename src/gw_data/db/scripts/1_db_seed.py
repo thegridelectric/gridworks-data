@@ -6,16 +6,19 @@ import uuid
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from getpass import getpass
+from passlib.context import CryptContext
 
 from gw_data.config import Settings
-from gw_data.asl.enums.base_g_node_class import BaseGNodeClass
-from gw_data.asl.enums.g_node_status import GNodeStatus
-from gw_data.db.models import GNodeSql, CustomerSql, InstallerSql, SpaceheatInstallationSql
+from gw_data.db.models.user import UserSql
+from gw_data.db.models.user_installation_role import UserInstallationRoleSql
+from gw_data.sema.enums import BaseGNodeClass, GNodeStatus
+from gw_data.db.models import GNodeSql, CustomerSql, InstallerSql, InstallationSql
 
 
 dotenv.load_dotenv()
 settings = Settings()
-engine = create_engine(settings.db_url.get_secret_value())
+engine = create_engine(settings.db_url.get_secret_value(), echo=True)
 
 db_sessionmaker = sessionmaker(bind=engine)
 db_session = db_sessionmaker()
@@ -28,6 +31,7 @@ default_installer = InstallerSql(
 )
 db_session.add(default_installer)
 
+beech_id = None
 file_path = os.path.join(os.path.dirname(__file__), './seed_data/homes.csv')
 with open(file_path, newline='') as csvfile:
     csv_reader = csv.reader(csvfile, delimiter=',', quotechar='"')
@@ -54,7 +58,7 @@ with open(file_path, newline='') as csvfile:
         )
         db_session.add(customer)
 
-        installation = SpaceheatInstallationSql(
+        installation = InstallationSql(
             id = uuid.uuid4(),
             g_node_id = g_node.id,
             display_name = short_alias,
@@ -68,7 +72,58 @@ with open(file_path, newline='') as csvfile:
             scada_ip_address = scada_ip_address,
             scada_git_commit = scada_git_commit
         )    
+
+        if installation.display_name == 'beech':
+            beech_id = installation.id
+
         db_session.add(installation)
 
 
-    db_session.commit()
+gbo_pwd_context = CryptContext(
+    schemes=["bcrypt"],
+    deprecated="auto",
+    bcrypt__rounds=12,
+    bcrypt__ident="2b"
+)
+
+
+admin_pw = None
+while admin_pw is None:
+    admin_pw = getpass('Enter a password for the user "admin":')
+    admin_pw_confirmed = getpass('Enter again to confirm:')
+    if admin_pw != admin_pw_confirmed:
+        admin_pw = None
+
+admin = UserSql(
+    id = uuid.uuid4(),
+    username = "admin",
+    hashed_password = gbo_pwd_context.hash(admin_pw)
+)
+db_session.add(admin)
+
+beech_user_pw = None
+while beech_user_pw is None:
+    beech_user_pw = getpass('Enter a password for the user "beech-user":')
+    beech_user_pw_confirmed = getpass('Enter again to confirm:')
+    if beech_user_pw != beech_user_pw_confirmed:
+        beech_user_pw = None
+
+beech_user = UserSql(
+    id = uuid.uuid4(),
+    username = "beech-user",
+    hashed_password = gbo_pwd_context.hash(beech_user_pw)
+)
+db_session.add(beech_user)
+
+db_session.add(UserInstallationRoleSql(
+    user_id = admin.id,
+    role = "admin"
+))
+
+db_session.add(UserInstallationRoleSql(
+    user_id = beech_user.id,
+    role = "owner",
+    installation_id = beech_id
+))
+
+db_session.commit()

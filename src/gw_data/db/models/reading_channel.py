@@ -32,41 +32,31 @@ class ReadingChannelSql(Base):
     unit: Mapped[str] = mapped_column(String, nullable=False)
     unit_type: Mapped[str] = mapped_column(String, nullable=False)
     channel_type: Mapped[str] = mapped_column(String, nullable=False)
-    start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
-    in_power_metering: Mapped[bool] = mapped_column(Boolean, nullable=True)
-    about_node_name: Mapped[str] = mapped_column(String, nullable=False)
-    captured_by_node_name: Mapped[str] = mapped_column(String, nullable=False)
+    deactivated_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
 
     __table_args__ = (
         Index("terminal_asset_alias", "name"),
         UniqueConstraint(
             "terminal_asset_alias",
             "name",
-            name="unique_name_terminal_asset",
+            "deactivated_date",
+            name="unique_name_terminal_asset_deactivated_date",
+            postgresql_nulls_not_distinct=True 
         )
     )
 
     def __repr__(self):
-        ta_short = self.terminal_asset_alias.split(".")[-2]
-        power_metering_status = (
-            "IN POWER METERING: \n" if self.in_power_metering else ""
-        )
+        active_status = f"deactivated {self.deactivated_date.isoformat()}" if self.self.deactivated_date is not None else "active"
         return (
-            f"{power_metering_status}"
             f"<ReadingChannelSql(name='{self.name}', "
-            f"about_node_name='{self.about_node_name}', captured_by_node_name='{self.captured_by_node_name}', "
-            f"unit='{self.unit}', terminal asset: {ta_short}>"
+            f"unit='{self.unit}', terminal asset={self.terminal_asset_alias.split(".")[-2]}, [{active_status}])>"
+            
         )
 
     def __str__(self):
-        ta_short = self.terminal_asset_alias.split(".")[-2]
-        power_metering_status = (
-            "IN POWER METERING: \n" if self.in_power_metering else ""
-        )
+        active_status = f"deactivated {self.deactivated_date.isoformat()}" if self.self.deactivated_date is not None else "active"
         return (
-            f"{power_metering_status}"
             f"ReadingChannelSql(name:{self.name},"
-            f"about_node_name: {self.about_node_name}, captured_by_node_name: {self.captured_by_node_name}, "
-            f"unit: {self.unit}, terminal asset: {ta_short}"
+            f"unit: {self.unit}, terminal asset: {self.terminal_asset_alias.split(".")[-2]}, [{active_status}])"
         )
 

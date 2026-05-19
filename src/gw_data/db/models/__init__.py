@@ -7,7 +7,7 @@ from gw_data.db.models.connectivity_edge import ConnectivityEdgeSql
 from gw_data.db.models.customer import CustomerSql
 from gw_data.db.models.installer import InstallerSql
 from gw_data.db.models.user import UserSql
-from gw_data.db.models.spaceheat_installation import SpaceheatInstallationSql
+from gw_data.db.models.installation import InstallationSql
 
 from gw_data.db.models.reading_channel import ReadingChannelSql
 from gw_data.db.models.message import MessageSql
@@ -30,7 +30,7 @@ __all__ = [
     "CustomerSql",
     "InstallerSql",
     "UserSql",
-    "SpaceheatInstallationSql",
+    "InstallationSql",
     "ReadingChannelSql",
     "MessageSql",
     "ReadingSql"
