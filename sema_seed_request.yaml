@@ -1,0 +1,7 @@
+initial_targets:
+  types:
+    position.point.gt: {}
+    g.node.gt: {}
+  enums:
+    base.g.node.class: {}
+    g.node.status: {}

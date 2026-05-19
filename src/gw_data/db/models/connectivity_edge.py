@@ -8,7 +8,7 @@ ASL types are used for validation (via the codec) before any insert/update.
 from __future__ import annotations
 import uuid
 
-from datetime import datetime, timezone
+from datetime import datetime
 
 from sqlalchemy import (
     Uuid,
@@ -23,9 +23,8 @@ from sqlalchemy.orm import (
     mapped_column
 )
 
-from gw_data.asl.enums import GNodeStatus
-from gw_data.asl.types import ConnectivityEdgeGt
 from gw_data.db.models._base import Base
+from gw_data.sema.enums import GNodeStatus
 
 
 class ConnectivityEdgeSql(Base):
@@ -55,27 +54,27 @@ class ConnectivityEdgeSql(Base):
         ),
     )
 
-    # -------------------
-    #  ASL ↔ SQL Helpers
-    # -------------------
+    # # -------------------
+    # #  ASL ↔ SQL Helpers
+    # # -------------------
 
-    def to_gt(self) -> ConnectivityEdgeGt:
-        return ConnectivityEdgeGt(
-            id=self.id,
-            from_g_node_id=self.from_g_node_id,
-            to_g_node_id=self.to_g_node_id,
-            from_g_node_alias=self.from_g_node_alias,
-            to_g_node_alias=self.to_g_node_alias,
-            status=self.status,
-        )
+    # def to_gt(self) -> ConnectivityEdgeGt:
+    #     return ConnectivityEdgeGt(
+    #         id=self.id,
+    #         from_g_node_id=self.from_g_node_id,
+    #         to_g_node_id=self.to_g_node_id,
+    #         from_g_node_alias=self.from_g_node_alias,
+    #         to_g_node_alias=self.to_g_node_alias,
+    #         status=self.status,
+    #     )
 
-    @staticmethod
-    def from_gt(gt: ConnectivityEdgeGt) -> "ConnectivityEdgeSql":
-        return ConnectivityEdgeSql(
-            id=gt.id,
-            from_g_node_id=gt.from_g_node_id,
-            to_g_node_id=gt.to_g_node_id,
-            from_g_node_alias=gt.from_g_node_alias,
-            to_g_node_alias=gt.to_g_node_alias,
-            status=gt.status,
-        )
+    # @staticmethod
+    # def from_gt(gt: ConnectivityEdgeGt) -> "ConnectivityEdgeSql":
+    #     return ConnectivityEdgeSql(
+    #         id=gt.id,
+    #         from_g_node_id=gt.from_g_node_id,
+    #         to_g_node_id=gt.to_g_node_id,
+    #         from_g_node_alias=gt.from_g_node_alias,
+    #         to_g_node_alias=gt.to_g_node_alias,
+    #         status=gt.status,
+    #     )

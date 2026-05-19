@@ -29,7 +29,7 @@ class MessageSql(Base):
     persisted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     message_type_name: Mapped[str] = mapped_column(String, nullable=False)
-    payload: Mapped[JSONB] = mapped_column(JSONB, nullable=False)
+    payload: Mapped[dict] = mapped_column(JSONB, nullable=False)
 
     __table_args__ = (
         # TimescaleDB automatically creates this one; we need to include it so Alembic doesn't get confused
@@ -46,3 +46,6 @@ class MessageSql(Base):
             }
         }
     )
+
+    def test_fn(self):
+        self.abc.defe = 3

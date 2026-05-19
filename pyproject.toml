@@ -1,6 +1,6 @@
 [project]
 name = "gw_data"
-version = "0.1.8"
+version = "0.2.0"
 description = "Gridworks Data Infrastructure"
 readme = "README.md"
 authors = [
@@ -23,3 +23,8 @@ gw_data = "gw_data:main"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "passlib>=1.7.4",
+]

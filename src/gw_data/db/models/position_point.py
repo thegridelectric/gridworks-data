@@ -13,11 +13,8 @@ from sqlalchemy.orm import (
     mapped_column
 )
 
-from gw_data.asl.types import (
-    PositionPointGt,
-)
-
 from gw_data.db.models._base import Base
+from gw_data.sema.types import PositionPointGt
 
 class PositionPointSql(Base):
     __tablename__ = "position_points"
@@ -33,7 +30,7 @@ class PositionPointSql(Base):
     def to_gt(self) -> PositionPointGt:
         """Serialize database row → ASL GT."""
         return PositionPointGt(
-            id=self.id,
+            id=str(self.id),
             latitude_micro_deg=self.latitude_micro_deg,
             longitude_micro_deg=self.longitude_micro_deg,
         )
@@ -42,7 +39,7 @@ class PositionPointSql(Base):
     def from_gt(gt: PositionPointGt) -> "PositionPointSql":
         """Create SQL row from ASL GT after full ASL validation."""
         return PositionPointSql(
-            id=gt.id,
+            id=uuid.UUID(gt.id),
             latitude_micro_deg=gt.latitude_micro_deg,
             longitude_micro_deg=gt.longitude_micro_deg,
         )
