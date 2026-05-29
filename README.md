@@ -4,68 +4,79 @@ This project contains code related to working with databases in the GridWorks ec
 
 Our platform is PostgreSQL, with the TimescaleDB (+toolkit) extensions for efficiently handling time-series data.
 
+## Prerequisites
+
+* **Docker Engine** — to run PostgreSQL+TimescaleDB locally.
+  (If you have previously set up the RabbitMQ server from `gridworks-base`, you should already have Docker.)
+* **`psql`** PostgreSQL command-line client (any modern version; tested with 14.x and 18.x).
+  Install via your package manager (e.g. `brew install libpq && brew link --force libpq` on macOS, `sudo apt install postgresql-client` on Linux). Check with `psql --version`.
+  *(Optional: `pgAdmin` as a GUI for inspecting the database.)*
+* **Python ≥ 3.12** and `uv` (per the rest of the GridWorks toolchain).
+
 ## Database Setup
 
 The following steps will get you set up to run with the database.
 
-### 1. Install the Docker image with PostgreSQL and TimescaleDB.
+### 1. Run a PostgreSQL+TimescaleDB container
 
-Make sure you have Docker Engine installed.
-(If you have previously set up the RabbitMQ server from `gridworks-base` then you should already have it.)
+Pull the official TimescaleDB image and start a container. **You need the `-ha` variant** for PostgreSQL v18 and TimescaleDB v2.25 — without `-ha` you'll get the "lite" version of TimescaleDB which is missing required functionality.
 
-Then, download the official TimescaleDB docker image and use it to build a container.
-Detailed instructions for setting this up are online at: 
-https://www.tigerdata.com/docs/self-hosted/latest/install/installation-docker
+If you don't already have a PostgreSQL listener on port 5432, map `5432:5432`. If you do (native install, or another Docker postgres), pick a free port and map `<HOST_PORT>:5432` instead (e.g. `5433:5432`).
 
-A few things to note:
-* Download the `timescaledb-ha:pg18-ts2.25` Docker image for **PostgreSQL v18** and **TimescaleDB v2.25**. (The `ha` part of the name is important! Without it you will get the "lite" version of TimescaleDB which does not have all our required functionality.)
-* When building the container, you need to include a port mapping for 5432. If you are not already running a PostgreSQL instance on your machine than you can just map `5432:5432`. But if you are already running PostgreSQL (either with Docker or natively) you will need to select a different port (e.g. `5433:5432`).
-* When building the container, you need to include a `POSTGRES_PASSWORD` env variable, which will be the password for the default `postgres` user.
+Pick a `POSTGRES_PASSWORD` — this becomes the password for the built-in `postgres` superuser; record it locally (e.g. in `.env`), don't commit it.
+
+Concrete `docker run` example (uses 5433 and a placeholder password):
+
+    docker run -d \
+      --name gw-data-pg \
+      -e POSTGRES_PASSWORD=changeme \
+      -p 5433:5432 \
+      timescale/timescaledb-ha:pg18-ts2.25
+
+Verify the container is healthy: `docker ps` should show it up, and `PGPASSWORD=changeme psql -h 127.0.0.1 -p 5433 -U postgres -c "SELECT version();"` should return PostgreSQL 18.x.
+
+Detailed instructions and alternative configurations: https://www.tigerdata.com/docs/self-hosted/latest/install/installation-docker
 
 ### 2. Create the Database
 
-For this step you will need the `psql` PostgreSQL command-line client, of a version at least as high as the PostgreSQL server (v18).
-You can do this via your usual package manager (e.g. `sudo apt install psql`).
-You can check your installed version via `psql --version`.
+The repo ships an init script at `src/gw_data/db/scripts/0_server_init.psql` that creates the `gridworks` database and three roles: `gw_admin` (full ownership), `gw_writer` (insert/update/delete), and `gw_reader` (select-only).
 
-(You may also want to install the `pgAdmin` tool as a GUI for conveniently inspecting the database and running SQL queries.)
+**Note: the script uses `psql`'s interactive `\password` meta-command three times** (for `gw_admin`, `gw_writer`, `gw_reader`). It must be run **interactively** — it will prompt for each password as it runs and cannot be piped or run via CI:
 
-Once you have `psql` installed, you can use it to run the initialization script as follows (replace `%PORT%` with the port number you mapped to 5432 when you built your Docker container in Step 1):
+    psql -d "postgresql://127.0.0.1:<PORT>/" -U postgres -f src/gw_data/db/scripts/0_server_init.psql
 
-    psql -d postgresql://127.0.01:<%PORT%>/ -U postgres -f src/gw_data/db/scripts/0_server_init.sql
+You'll be prompted first for the `postgres` superuser password (the one you set as `POSTGRES_PASSWORD` in §1), then in turn for new passwords for `gw_admin`, `gw_writer`, and `gw_reader`. Pick whatever you like and record them in your local `.env`.
 
-This will prompt you first for the `postgres` user password.
-Enter the password you specified as the `POSTGRES_PASSWORD` env variable when you built your Docker container.
+For non-interactive setups (CI, scripted bootstraps), apply the equivalent SQL with explicit passwords; see the script as the canonical reference.
 
-This will also prompt you to create a password for the `gw_admin` database user.
-This user is what we will use for all our database admin operations from this point forward.
-(The built-in `postgres` user is like the `root` OS user -- we don't want to use it unless we have to.)
+Then copy `template.env` (at the repo root) to `.env`:
 
-Copy your `template.env` file to `.env` (`cp template.env .env`).
-In the `GW_DATA_DB_URL` value, replace `<%PASSWORD%>` with the `gw_admin` password you just set.
-Also, replace `<%PORT%>` with your port number mapped to 5432 on your Docker image.
+    cp template.env .env
 
-NOTE -- if things ever go badly and you want to restart your database from scratch, there is another script for that:
+Edit `.env`:
+* Replace `<%PASSWORD%>` in `GW_DATA_DB_URL` with the `gw_admin` password you just set.
+* Replace `<%PORT%>` with the host port you mapped to 5432 (e.g. `5433`).
 
-    psql -d postgresql://127.0.01:<%PORT%>/ -U postgres -f src/gw_data/db/scripts/_XX_drop_all.sql
+**Reset shortcut:** if your local DB ever gets into a weird state, you can wipe it and start over with:
 
-## 3. Create and Seed your Database
+    psql -d "postgresql://127.0.0.1:<PORT>/" -U postgres -f src/gw_data/db/scripts/_XX_drop_all.sql
 
-Once your database is created, the `gw_admin` user is created, and the `.env` file is set up accordingly, you can create our tables and seed them with data.
+### 3. Create and Seed your Database
 
-First, `uv sync` to download the project dependencies.
+With the database created, `gw_admin` ready, and `.env` filled in, you can create the tables and seed initial data.
 
-We use `alembic` to manage changes to our schema.
-Upgrade to the most recent schema with the following command:
-
+    uv sync
     uv run alembic upgrade head
 
-This should create several tables in the database (e.g. `g_nodes` and `messages`).
-Use psql or pgAdmin to confirm that this worked.
+This should create 12 tables: `alembic_version`, `connectivity_edges`, `customers`, `g_nodes`, `installations`, `installers`, `messages`, `position_points`, `reading_channels`, `readings`, `user_installation_roles`, `users`.
 
-Next, run the seed script to populate some initial data from the database with the following command:
+Verify with `psql -d "postgresql://gw_admin:<PASSWORD>@127.0.0.1:<PORT>/gridworks" -c "\dt"`.
+
+Then seed initial data:
 
     uv run python ./src/gw_data/db/scripts/1_db_seed.py
+
+**Note: the seed script is also interactive** — it uses Python's `getpass` to prompt for passwords for two seeded users (`admin` and `beech-user`). It must be run from a real terminal (no piping). The seed populates a small set of dev users, a customer, an installation, and one g_node.
 
 In the future we will have a more comprehensive seeding process that will ingest some actual message data.
 
