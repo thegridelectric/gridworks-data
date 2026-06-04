@@ -1,8 +1,8 @@
 """initial schema
 
-Revision ID: fa719a767a1e
+Revision ID: 1220f2f941dd
 Revises: 
-Create Date: 2026-05-18 17:28:45.949760
+Create Date: 2026-06-04 12:55:20.076907
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = 'fa719a767a1e'
+revision: str = '1220f2f941dd'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -25,12 +25,14 @@ def upgrade() -> None:
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('primary_contact', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
     sa.Column('secondary_contact', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    schema='gridworks'
     )
     op.create_table('installers',
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('info', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    schema='gridworks'
     )
     op.create_table('messages',
     sa.Column('id', sa.Uuid(), nullable=False),
@@ -41,17 +43,19 @@ def upgrade() -> None:
     sa.Column('message_type_name', sa.String(), nullable=False),
     sa.Column('payload', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
     sa.PrimaryKeyConstraint('id', 'timestamp'),
+    schema='gridworks',
     timescaledb_hypertable={'time_column_name': 'timestamp'}
     )
-    op.create_index('ix_from_type_message', 'messages', ['from_alias', 'message_type_name', 'persisted_at'], unique=False)
-    op.create_index(op.f('ix_messages_timestamp'), 'messages', ['timestamp'], unique=False)
-    op.create_index('messages_timestamp_idx', 'messages', [sa.literal_column('timestamp DESC')], unique=False)
+    op.create_index('ix_from_type_message', 'messages', ['from_alias', 'message_type_name', 'persisted_at'], unique=False, schema='gridworks')
+    op.create_index(op.f('ix_gridworks_messages_timestamp'), 'messages', ['timestamp'], unique=False, schema='gridworks')
+    op.create_index('messages_timestamp_idx', 'messages', [sa.literal_column('timestamp DESC')], unique=False, schema='gridworks')
     op.create_table('position_points',
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('latitude_micro_deg', sa.Integer(), nullable=False),
     sa.Column('longitude_micro_deg', sa.Integer(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    schema='gridworks'
     )
     op.create_table('reading_channels',
     sa.Column('id', sa.Uuid(), nullable=False),
@@ -63,9 +67,10 @@ def upgrade() -> None:
     sa.Column('channel_type', sa.String(), nullable=False),
     sa.Column('deactivated_date', sa.DateTime(timezone=True), nullable=True),
     sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('terminal_asset_alias', 'name', 'deactivated_date', name='unique_name_terminal_asset_deactivated_date', postgresql_nulls_not_distinct=True)
+    sa.UniqueConstraint('terminal_asset_alias', 'name', 'deactivated_date', name='unique_name_terminal_asset_deactivated_date', postgresql_nulls_not_distinct=True),
+    schema='gridworks'
     )
-    op.create_index('terminal_asset_alias', 'reading_channels', ['name'], unique=False)
+    op.create_index('terminal_asset_alias', 'reading_channels', ['name'], unique=False, schema='gridworks')
     op.create_table('users',
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('username', sa.String(length=50), nullable=False),
@@ -75,46 +80,50 @@ def upgrade() -> None:
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('username')
+    sa.UniqueConstraint('username'),
+    schema='gridworks'
     )
     op.create_table('g_nodes',
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('alias', sa.String(), nullable=False),
     sa.Column('prev_alias', sa.String(), nullable=True),
-    sa.Column('base_class', sa.Enum('TerminalAsset', 'LeafTransactiveNode', 'ConnectivityNode', 'MarketMaker', 'Logical', name='base_g_node_class'), nullable=True),
+    sa.Column('base_class', sa.Enum('TerminalAsset', 'LeafTransactiveNode', 'ConnectivityNode', 'MarketMaker', 'Logical', name='base_g_node_class', schema='gridworks', inherit_schema=True), nullable=True),
     sa.Column('g_node_class', sa.String(), nullable=False),
-    sa.Column('status', sa.Enum('Pending', 'Active', 'PermanentlyDeactivated', 'Suspended', name='g_node_status'), nullable=False),
+    sa.Column('status', sa.Enum('Pending', 'Active', 'Suspended', 'PermanentlyDeactivated', name='g_node_status', schema='gridworks', inherit_schema=True), nullable=False),
     sa.Column('position_point_id', sa.Uuid(), nullable=True),
     sa.Column('display_name', sa.String(), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.ForeignKeyConstraint(['position_point_id'], ['position_points.id'], ),
-    sa.PrimaryKeyConstraint('id')
+    sa.ForeignKeyConstraint(['position_point_id'], ['gridworks.position_points.id'], ),
+    sa.PrimaryKeyConstraint('id'),
+    schema='gridworks'
     )
-    op.create_index(op.f('ix_g_nodes_alias'), 'g_nodes', ['alias'], unique=True)
+    op.create_index(op.f('ix_gridworks_g_nodes_alias'), 'g_nodes', ['alias'], unique=True, schema='gridworks')
     op.create_table('readings',
     sa.Column('channel_id', sa.Uuid(), nullable=False),
     sa.Column('message_id', sa.Uuid(), nullable=False),
     sa.Column('timestamp', sa.DateTime(timezone=True), nullable=False),
     sa.Column('value', sa.BigInteger(), nullable=False),
-    sa.ForeignKeyConstraint(['channel_id'], ['reading_channels.id'], ),
-    sa.UniqueConstraint('channel_id', 'timestamp', name='readings_channel_id_timestamp_key')
+    sa.ForeignKeyConstraint(['channel_id'], ['gridworks.reading_channels.id'], ),
+    sa.UniqueConstraint('channel_id', 'timestamp', name='readings_channel_id_timestamp_key'),
+    schema='gridworks'
     )
-    op.create_index(op.f('ix_readings_message_id'), 'readings', ['message_id'], unique=False)
-    op.create_index(op.f('ix_readings_timestamp'), 'readings', ['timestamp'], unique=False)
-    op.create_index('readings_timestamp_idx', 'readings', [sa.literal_column('timestamp DESC')], unique=False)
+    op.create_index(op.f('ix_gridworks_readings_message_id'), 'readings', ['message_id'], unique=False, schema='gridworks')
+    op.create_index(op.f('ix_gridworks_readings_timestamp'), 'readings', ['timestamp'], unique=False, schema='gridworks')
+    op.create_index('readings_timestamp_idx', 'readings', [sa.literal_column('timestamp DESC')], unique=False, schema='gridworks')
     op.create_table('connectivity_edges',
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('from_g_node_id', sa.Uuid(), nullable=False),
     sa.Column('to_g_node_id', sa.Uuid(), nullable=False),
-    sa.Column('status', sa.Enum('Pending', 'Active', 'PermanentlyDeactivated', 'Suspended', name='connectivity_edge_status'), nullable=False),
+    sa.Column('status', sa.Enum('Pending', 'Active', 'Suspended', 'PermanentlyDeactivated', name='connectivity_edge_status', schema='gridworks', inherit_schema=True), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.ForeignKeyConstraint(['from_g_node_id'], ['g_nodes.id'], ),
-    sa.ForeignKeyConstraint(['to_g_node_id'], ['g_nodes.id'], ),
+    sa.ForeignKeyConstraint(['from_g_node_id'], ['gridworks.g_nodes.id'], ),
+    sa.ForeignKeyConstraint(['to_g_node_id'], ['gridworks.g_nodes.id'], ),
     sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('from_g_node_id', 'to_g_node_id', name='uq_connectivity_edges_from_to')
+    sa.UniqueConstraint('from_g_node_id', 'to_g_node_id', name='uq_connectivity_edges_from_to'),
+    schema='gridworks'
     )
-    op.create_index(op.f('ix_connectivity_edges_from_g_node_id'), 'connectivity_edges', ['from_g_node_id'], unique=False)
-    op.create_index(op.f('ix_connectivity_edges_to_g_node_id'), 'connectivity_edges', ['to_g_node_id'], unique=False)
+    op.create_index(op.f('ix_gridworks_connectivity_edges_from_g_node_id'), 'connectivity_edges', ['from_g_node_id'], unique=False, schema='gridworks')
+    op.create_index(op.f('ix_gridworks_connectivity_edges_to_g_node_id'), 'connectivity_edges', ['to_g_node_id'], unique=False, schema='gridworks')
     op.create_table('installations',
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('g_node_id', sa.Uuid(), nullable=False),
@@ -128,62 +137,64 @@ def upgrade() -> None:
     sa.Column('house_parameters', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
     sa.Column('scada_ip_address', sa.String(), nullable=True),
     sa.Column('scada_git_commit', sa.String(), nullable=True),
-    sa.ForeignKeyConstraint(['customer_id'], ['customers.id'], ),
-    sa.ForeignKeyConstraint(['g_node_id'], ['g_nodes.id'], ),
-    sa.ForeignKeyConstraint(['installer_id'], ['installers.id'], ),
-    sa.PrimaryKeyConstraint('id')
+    sa.ForeignKeyConstraint(['customer_id'], ['gridworks.customers.id'], ),
+    sa.ForeignKeyConstraint(['g_node_id'], ['gridworks.g_nodes.id'], ),
+    sa.ForeignKeyConstraint(['installer_id'], ['gridworks.installers.id'], ),
+    sa.PrimaryKeyConstraint('id'),
+    schema='gridworks'
     )
     op.create_table('user_installation_roles',
     sa.Column('user_id', sa.Uuid(), nullable=False),
     sa.Column('role', sa.String(), nullable=False),
     sa.Column('installation_id', sa.Uuid(), nullable=True),
-    sa.ForeignKeyConstraint(['installation_id'], ['installations.id'], ),
-    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
-    sa.UniqueConstraint('user_id', 'installation_id', name='user_installation_roles_user_installation_key')
+    sa.ForeignKeyConstraint(['installation_id'], ['gridworks.installations.id'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['gridworks.users.id'], ),
+    sa.UniqueConstraint('user_id', 'installation_id', name='user_installation_roles_user_installation_key'),
+    schema='gridworks'
     )
     # ### end Alembic commands ###
 
     # TimescaleDB setup for messages and readings
-    op.execute("SELECT create_hypertable('messages', by_range('timestamp'))")
-    op.execute("SELECT create_hypertable('readings', by_range('timestamp'))")
+    op.execute("SELECT create_hypertable('gridworks.messages', by_range('timestamp'))")
+    op.execute("SELECT create_hypertable('gridworks.readings', by_range('timestamp'))")
 
     # Use the column store for readings data older than 2 weeks (for efficient analytics and disk usage)
     op.execute("""
-        ALTER TABLE readings SET(
+        ALTER TABLE gridworks.readings SET(
             timescaledb.enable_columnstore, 
             timescaledb.orderby = 'timestamp DESC', 
             timescaledb.segmentby = 'channel_id')
     """)
-    op.execute("CALL add_columnstore_policy('readings', INTERVAL '2 weeks')")
+    op.execute("CALL add_columnstore_policy('gridworks.readings', INTERVAL '2 weeks')")
 
 
 def downgrade() -> None:
     """Downgrade schema."""
     # ### commands auto generated by Alembic - please adjust! ###
-    op.drop_table('user_installation_roles')
-    op.drop_table('installations')
-    op.drop_index(op.f('ix_connectivity_edges_to_g_node_id'), table_name='connectivity_edges')
-    op.drop_index(op.f('ix_connectivity_edges_from_g_node_id'), table_name='connectivity_edges')
-    op.drop_table('connectivity_edges')
-    op.drop_index('readings_timestamp_idx', table_name='readings')
-    op.drop_index(op.f('ix_readings_timestamp'), table_name='readings')
-    op.drop_index(op.f('ix_readings_message_id'), table_name='readings')
-    op.drop_table('readings')
-    op.drop_index(op.f('ix_g_nodes_alias'), table_name='g_nodes')
-    op.drop_table('g_nodes')
-    op.drop_table('users')
-    op.drop_index('terminal_asset_alias', table_name='reading_channels')
-    op.drop_table('reading_channels')
-    op.drop_table('position_points')
-    op.drop_index('messages_timestamp_idx', table_name='messages')
-    op.drop_index(op.f('ix_messages_timestamp'), table_name='messages')
-    op.drop_index('ix_from_type_message', table_name='messages')
-    op.drop_table('messages')
-    op.drop_table('installers')
-    op.drop_table('customers')
+    op.drop_table('user_installation_roles', schema='gridworks')
+    op.drop_table('installations', schema='gridworks')
+    op.drop_index(op.f('ix_gridworks_connectivity_edges_to_g_node_id'), table_name='connectivity_edges', schema='gridworks')
+    op.drop_index(op.f('ix_gridworks_connectivity_edges_from_g_node_id'), table_name='connectivity_edges', schema='gridworks')
+    op.drop_table('connectivity_edges', schema='gridworks')
+    op.drop_index('readings_timestamp_idx', table_name='readings', schema='gridworks')
+    op.drop_index(op.f('ix_gridworks_readings_timestamp'), table_name='readings', schema='gridworks')
+    op.drop_index(op.f('ix_gridworks_readings_message_id'), table_name='readings', schema='gridworks')
+    op.drop_table('readings', schema='gridworks')
+    op.drop_index(op.f('ix_gridworks_g_nodes_alias'), table_name='g_nodes', schema='gridworks')
+    op.drop_table('g_nodes', schema='gridworks')
+    op.drop_table('users', schema='gridworks')
+    op.drop_index('terminal_asset_alias', table_name='reading_channels', schema='gridworks')
+    op.drop_table('reading_channels', schema='gridworks')
+    op.drop_table('position_points', schema='gridworks')
+    op.drop_index('messages_timestamp_idx', table_name='messages', schema='gridworks')
+    op.drop_index(op.f('ix_gridworks_messages_timestamp'), table_name='messages', schema='gridworks')
+    op.drop_index('ix_from_type_message', table_name='messages', schema='gridworks')
+    op.drop_table('messages', schema='gridworks')
+    op.drop_table('installers', schema='gridworks')
+    op.drop_table('customers', schema='gridworks')
     # ### end Alembic commands ###
-
+    
     # Alembic doesn't automatically drop the types it creates.
-    op.execute('DROP TYPE base_g_node_class')
-    op.execute('DROP TYPE g_node_status')
-    op.execute('DROP TYPE connectivity_edge_status')
+    op.execute('DROP TYPE gridworks.base_g_node_class')
+    op.execute('DROP TYPE gridworks.g_node_status')
+    op.execute('DROP TYPE gridworks.connectivity_edge_status')
