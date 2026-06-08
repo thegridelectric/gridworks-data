@@ -40,7 +40,7 @@ class ConnectivityEdgeSql(Base):
     )
 
     status: Mapped[GNodeStatus] = mapped_column(
-        Enum(GNodeStatus, name="connectivity_edge_status")
+        Enum(GNodeStatus, name="connectivity_edge_status", inherit_schema=True)
     )
 
     created_at: Mapped[datetime] = mapped_column(

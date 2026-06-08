@@ -1,0 +1,4 @@
+-- In prod this will already be created.
+CREATE DATABASE tsdb;
+\c tsdb
+CREATE EXTENSION IF NOT EXISTS timescaledb;

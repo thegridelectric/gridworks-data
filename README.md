@@ -15,11 +15,11 @@ Our platform is PostgreSQL, with the TimescaleDB (+toolkit) extensions for effic
 
 ## Database Setup
 
-The following steps will get you set up to run with the database.
+The following steps will get you set up to run with the database, either locally or on a managed Tiger Cloud instance.
 
-### 1. Run a PostgreSQL+TimescaleDB container
+### Local Pre-requisite: PostgreSQL+TimescaleDB container
 
-Pull the official TimescaleDB image and start a container. **You need the `-ha` variant** for PostgreSQL v18 and TimescaleDB v2.25 — without `-ha` you'll get the "lite" version of TimescaleDB which is missing required functionality.
+If running locally, you'll need to start by pulling the official TimescaleDB image and starting a container. **You need the `-ha` variant** for PostgreSQL v18 and TimescaleDB v2.25 — without `-ha` you'll get the "lite" version of TimescaleDB which is missing required functionality.
 
 If you don't already have a PostgreSQL listener on port 5432, map `5432:5432`. If you do (native install, or another Docker postgres), pick a free port and map `<HOST_PORT>:5432` instead (e.g. `5433:5432`).
 
@@ -37,42 +37,77 @@ Verify the container is healthy: `docker ps` should show it up, and `PGPASSWORD=
 
 Detailed instructions and alternative configurations: https://www.tigerdata.com/docs/self-hosted/latest/install/installation-docker
 
-### 2. Create the Database
+### Database Setup
 
-The repo ships an init script at `src/gw_data/db/scripts/0_server_init.psql` that creates the `gridworks` database and three roles: `gw_admin` (full ownership), `gw_writer` (insert/update/delete), and `gw_reader` (select-only).
+This repo includes a numbered sequence of scripts in the `src/gw_data/db/scripts` folder that will get you up and running.
 
-**Note: the script uses `psql`'s interactive `\password` meta-command three times** (for `gw_admin`, `gw_writer`, `gw_reader`). It must be run **interactively** — it will prompt for each password as it runs and cannot be piped or run via CI:
+#### 0. (Local-Only) Create the Database
+
+This step is not required (or even possible) on a Tiger Cloud managed server.
+
+Run `0_db_create.sql` as the `postgres` user to create the `tsdb` database and add the `timescaledb` extension.
 
     psql -d "postgresql://127.0.0.1:<PORT>/" -U postgres -f src/gw_data/db/scripts/0_server_init.psql
 
-You'll be prompted first for the `postgres` superuser password (the one you set as `POSTGRES_PASSWORD` in §1), then in turn for new passwords for `gw_admin`, `gw_writer`, and `gw_reader`. Pick whatever you like and record them in your local `.env`.
+* Replace `<PORT>` with the host port you mapped to 5432 (e.g. `5433`).
+* You'll be prompted for the `postgres` user password (i.e., the one you previously set as `POSTGRES_PASSWORD` in your `docker run` command).
+
+#### 1. Create the Users
+
+Run `1_db_user_setup.psql` as follows to create the users we need. This script can be run as the `postgres` user locally, or the `tsdbadmin` user in Tiger Cloud.
+
+    psql -d "postgresql://<SERVER>:<PORT>/" -U <postgres|tsdbadmin> -f src/gw_data/db/scripts/1_db_user_setup.psql
+
+* Replace `<SERVER>` with the database server address (e.g., `127.0.0.1` when running locally).
+* Again, replace `<PORT>` with your mapped host port.
+* Again, you'll be prompted for the `postgres` user password.
+
+This script creates three user roles: `gw_admin` (full ownership), `gw_journalkeeper` (insert/update/delete), and `gw_visualizer` (select-only).
+
+**Note: the script uses `psql`'s interactive `\password` meta-command three times** (once for each user). It must be run **interactively** — it will prompt for each password as it runs and cannot be piped or run via CI:
+
+You'll be prompted for new passwords for each of the users. Pick whatever you like and record them somewhere.
 
 For non-interactive setups (CI, scripted bootstraps), apply the equivalent SQL with explicit passwords; see the script as the canonical reference.
-
-Then copy `template.env` (at the repo root) to `.env`:
-
-    cp template.env .env
-
-Edit `.env`:
-* Replace `<%PASSWORD%>` in `GW_DATA_DB_URL` with the `gw_admin` password you just set.
-* Replace `<%PORT%>` with the host port you mapped to 5432 (e.g. `5433`).
 
 **Reset shortcut:** if your local DB ever gets into a weird state, you can wipe it and start over with:
 
     psql -d "postgresql://127.0.0.1:<PORT>/" -U postgres -f src/gw_data/db/scripts/_XX_drop_all.sql
 
-### 3. Create and Seed your Database
+#### 2. Create the `gridworks` Schema
 
-With the database created, `gw_admin` ready, and `.env` filled in, you can create the tables and seed initial data.
+Run `2_db_schema_setup.sql` as follows to create our private `gridworks` schema and apply appropriate permissions. This should be run as the `gw_admin` user.
 
-    uv sync
-    uv run alembic upgrade head
+    psql -d "postgresql://<SERVER>:<PORT>/" -U gw_admin -f src/gw_data/db/scripts/2_db_schema_setup.psql
 
-This should create 12 tables: `alembic_version`, `connectivity_edges`, `customers`, `g_nodes`, `installations`, `installers`, `messages`, `position_points`, `reading_channels`, `readings`, `user_installation_roles`, `users`.
+* Again, replace `<SERVER>` with the database server address.
+* Again, replace `<PORT>` with your mapped host port.
+* This time you'll be prompted for the `gw_admin` user password.
 
-Verify with `psql -d "postgresql://gw_admin:<PASSWORD>@127.0.0.1:<PORT>/gridworks" -c "\dt"`.
+#### 3. Run the Alembic Migrations
 
-Then seed initial data:
+Next we need to run the database migrations we've defined with Alembic to create the tables, etc. that we need.
+
+But first we need to update our .env file. Copy `template.env` (at the repo root) to `.env`:
+
+    cp template.env .env
+
+Then, edit `.env` as follows:
+* Replace `<SERVER>` with the database server address (e.g., `127.0.0.1` when running locally).
+* Replace `<%PASSWORD%>` in `GW_DATA_DB_URL` with the `gw_admin` password you just set.
+* Replace `<%PORT%>` with the host port you mapped to 5432 (e.g. `5433`).
+
+Now we can run `3_db_alembic_upgrade.sh` as follows:
+
+    `sh src/gw_data/db/scripts/3_db_alembic_upgrade.sh`
+
+This should create 12 tables in the `gridworks` schema: `alembic_version`, `connectivity_edges`, `customers`, `g_nodes`, `installations`, `installers`, `messages`, `position_points`, `reading_channels`, `readings`, `user_installation_roles`, `users`.
+
+Verify with `psql -d "postgresql://<SERVER>:<PORT>/tsdb" -U gw_admin -c "\dt gridworks.*"`.
+
+#### 4. Seed the Database
+
+With the database created, `gw_admin` ready, and `.env` filled in, you can seed some initial data:
 
     uv run python ./src/gw_data/db/scripts/1_db_seed.py
 

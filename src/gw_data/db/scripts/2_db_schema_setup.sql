@@ -1,0 +1,11 @@
+-- The following should be done by gw_admin while connected to tsdb
+
+CREATE SCHEMA gridworks;
+
+GRANT USAGE ON SCHEMA gridworks TO gw_journalkeeper;
+ALTER DEFAULT PRIVILEGES IN SCHEMA gridworks GRANT SELECT,INSERT,UPDATE,DELETE ON TABLES TO gw_journalkeeper;
+ALTER DEFAULT PRIVILEGES IN SCHEMA gridworks GRANT ALL PRIVILEGES ON SEQUENCES TO gw_journalkeeper;
+
+GRANT USAGE ON SCHEMA gridworks TO gw_visualizer;
+ALTER DEFAULT PRIVILEGES IN SCHEMA gridworks GRANT SELECT ON TABLES TO gw_visualizer;
+ALTER DEFAULT PRIVILEGES IN SCHEMA gridworks GRANT ALL PRIVILEGES ON SEQUENCES TO gw_visualizer;

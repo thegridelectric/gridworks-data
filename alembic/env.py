@@ -6,6 +6,13 @@ from sqlalchemy import engine_from_config, pool
 from alembic import context
 from gw_data.config import Settings
 
+# Custom code to use the gridworks schema
+GW_SCHEMA = "gridworks"
+def include_name(name, type_, parent_names):
+    if type_ == "schema":
+        # Only track migrations in your chosen schema
+        return name == GW_SCHEMA
+    return True
 
 # -----------------------------------------------------------------------------
 # Alembic Config
@@ -39,6 +46,11 @@ def run_migrations_offline():
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+
+        # Use our custom schema (and scan non-default schemas to find it, and use our filter function)
+        version_table_schema=GW_SCHEMA, 
+        include_schemas=True,               
+        include_name=include_name,
     )
 
     with context.begin_transaction():
@@ -55,7 +67,15 @@ def run_migrations_online():
     )
 
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+
+            # Use our custom schema (and scan non-default schemas to find it, and use our filter function)
+            version_table_schema=GW_SCHEMA, 
+            include_schemas=True,               
+            include_name=include_name,
+        )
 
         with context.begin_transaction():
             context.run_migrations()

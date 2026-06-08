@@ -1,0 +1,16 @@
+-- The following needs to be done by a powerful role (like postgresql or tsdbadmin), and doesn't need a specific database connection
+
+-- Basic security config
+REVOKE CONNECT ON DATABASE tsdb FROM PUBLIC;
+
+CREATE USER gw_admin;
+GRANT ALL ON DATABASE tsdb TO gw_admin;
+\password gw_admin
+
+CREATE USER gw_journalkeeper;
+GRANT CONNECT ON DATABASE tsdb TO gw_journalkeeper;
+\password gw_journalkeeper
+
+CREATE USER gw_visualizer;
+GRANT CONNECT ON DATABASE tsdb TO gw_visualizer;
+\password gw_visualizer

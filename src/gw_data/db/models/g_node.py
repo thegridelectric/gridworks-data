@@ -30,14 +30,14 @@ class GNodeSql(Base):
     prev_alias: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
     base_class: Mapped[BaseGNodeClass] = mapped_column(
-        Enum(BaseGNodeClass, name="base_g_node_class"),
+        Enum(BaseGNodeClass, name="base_g_node_class", inherit_schema=True),
         nullable=True
     )
 
     g_node_class: Mapped[str] = mapped_column(String)
 
     status: Mapped[GNodeStatus] = mapped_column(
-        Enum(GNodeStatus, name="g_node_status")
+        Enum(GNodeStatus, name="g_node_status", inherit_schema=True)
     )
 
     position_point_id: Mapped[Optional[uuid.UUID]] = mapped_column(

@@ -1,0 +1,58 @@
+name: Release
+
+# Publish gw_data to PyPI when a push to main carries a new version.
+#
+# The version in pyproject.toml is the trigger: salsify/detect-and-tag
+# compares `uv version --short` against existing git tags. If the version
+# is new, it creates the `vX.Y.Z` tag and the build/publish steps run;
+# if the version already has a tag, those steps are skipped (no
+# re-publish, which PyPI forbids anyway). So the release ritual is just
+# "bump the version, merge to main."
+#
+# Modeled on gridworks-base/.github/workflows/release.yml, trimmed to the
+# PyPI publish path (no TestPyPI dev-release, no release-drafter). Requires
+# a single repo secret: PYPI_TOKEN.
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # salsify/detect-and-tag pushes the vX.Y.Z tag
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Check if there is a parent commit
+        id: check-parent-commit
+        run: |
+          echo "sha=$(git rev-parse --verify --quiet HEAD^)" >> "$GITHUB_OUTPUT"
+
+      - name: Detect and tag new version
+        id: check-version
+        if: steps.check-parent-commit.outputs.sha
+        uses: salsify/action-detect-and-tag-new-version@v2.0.3
+        with:
+          version-command: |
+            uv version --short
+
+      - name: Build package
+        if: steps.check-version.outputs.tag
+        run: uv build
+
+      - name: Publish package on PyPI
+        if: steps.check-version.outputs.tag
+        run: uv publish --token ${{ secrets.PYPI_TOKEN }}
