@@ -134,41 +134,4 @@ We have column-store compression enabled on the readings table for data older th
 
 ### Useful Queries
 
-The following queries are useful for analyzing TimescaleDB performance:
-
-```
--- Display the size in MB of our two main tables
-SELECT pg_size_pretty(hypertable_size('readings')) as "Readings Table Size", pg_size_pretty(hypertable_size('messages')) as "Messages Table Size";
-```
-
-```
--- Display the size of all database tables in order.
--- This will show each TimescaleDB chunk as a separate table.
-SELECT
-    table_schema || '.' || table_name AS table_full_name,
-    pg_size_pretty(pg_total_relation_size('"' || table_schema || '"."' || table_name || '"')) AS size
-FROM information_schema.tables
-ORDER BY
-    pg_total_relation_size('"' || table_schema || '"."' || table_name || '"') DESC;
-
-```
-
-```
--- Display compression stats for each chunk in the readings table
-SELECT 
-    chunk_name,
-    pg_size_pretty(before_compression_total_bytes) AS size_before,
-    pg_size_pretty(after_compression_total_bytes) AS size_after,
-    100 - (after_compression_total_bytes::float / before_compression_total_bytes * 100) AS compression_ratio_pct
-FROM chunk_compression_stats('readings');
-```
-
-```
--- Get the ID of the policy_compression job so you can manually run `CALL run_job` with it (e.g. after a bulk import).
-SELECT job_id, proc_name, hypertable_name, config 
-FROM timescaledb_information.jobs;
-```
-```
--- Get info (table, time range, etc.) about the TimescaleDB chunks.
-SELECT * FROM timescaledb_information.chunks
-```
+There are some useful queries listed in `useful-queries.sql` in the project root.
