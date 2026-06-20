@@ -39,7 +39,7 @@ class ReadingSql(Base):
         index=True
     )
     timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
-    value: Mapped[BigInteger] = mapped_column(BigInteger, nullable=False)
+    value: Mapped[int] = mapped_column(BigInteger, nullable=False)
 
     __table_args__ = (
         # TimescaleDB automatically creates this one; we need to include it so Alembic doesn't get confused
