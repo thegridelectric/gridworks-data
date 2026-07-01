@@ -23,7 +23,7 @@ AS $BODY$
         SELECT 
             *,
             500 * primary_flow_gpm * (hp_lwt_c - hp_ewt_c) * 9 / 5 / 3410 AS hp_kw,
-            500 * dist_flow_gpm * (dist_swt_c - store_flow_gpm) * 9 / 5 / 3410 AS dist_kw,
+            500 * dist_flow_gpm * (dist_swt_c - dist_rwt_c) * 9 / 5 / 3410 AS dist_kw,
             500 * (
                 (1 - store_charge_discharge_0_1) * store_flow_gpm +
                 store_charge_discharge_0_1 * primary_flow_gpm

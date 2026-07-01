@@ -85,10 +85,10 @@ AS $BODY$
                 AVG (avg_value) FILTER (where channel_name like '%-relay5') AS relay_5_pulled_fraction,
                 AVG (avg_value) FILTER (where channel_name like '%-relay6') AS relay_6_pulled_fraction,
                 AVG (avg_value) FILTER (where channel_name like '%-relay9') AS relay_9_pulled_fraction,
-                AVG (avg_value) FILTER (where channel_name like 'zone1-heatcall') AS zone1_heatcall_fraction,
-                AVG (avg_value) FILTER (where channel_name like 'zone2-heatcall') AS zone2_heatcall_fraction,
-                AVG (avg_value) FILTER (where channel_name like 'zone3-heatcall') AS zone3_heatcall_fraction,
-                AVG (avg_value) FILTER (where channel_name like 'zone4-heatcall') AS zone4_heatcall_fraction
+                AVG (avg_value) FILTER (where channel_name like 'zone1-%-heat-call') AS zone1_heatcall_fraction,
+                AVG (avg_value) FILTER (where channel_name like 'zone2-%-heat-call') AS zone2_heatcall_fraction,
+                AVG (avg_value) FILTER (where channel_name like 'zone3-%-heat-call') AS zone3_heatcall_fraction,
+                AVG (avg_value) FILTER (where channel_name like 'zone4-%-heat-call') AS zone4_heatcall_fraction
             FROM (
                 SELECT 
                     terminal_asset_alias,
@@ -99,8 +99,8 @@ AS $BODY$
                         time_weight,
                         time_bucket,
                         '1 hour',
-                        LAG(time_weight) OVER (PARTITION BY terminal_asset_alias,channel_name ORDER BY time_bucket),
-                        LEAD(time_weight) OVER (PARTITION BY terminal_asset_alias,channel_name ORDER BY time_bucket)
+                        LAG(time_weight) OVER (PARTITION BY terminal_asset_alias,channel_name,unit ORDER BY time_bucket),
+                        LEAD(time_weight) OVER (PARTITION BY terminal_asset_alias,channel_name,unit ORDER BY time_bucket)
                     ) AS avg_value
                 FROM (
                     SELECT * FROM gridworks.readings_1hr

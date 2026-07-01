@@ -18,8 +18,9 @@ db_sessionmaker = sessionmaker(bind=engine)
 db_session = db_sessionmaker()
 
 
-t_start = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
-t_final = datetime(2026, 1, 1, tzinfo=timezone.utc)
+# t_start = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
+t_start = datetime(2026, 6, 1, tzinfo=timezone.utc)
+t_final = datetime(2026, 1, 31, tzinfo=timezone.utc)
 
 # t_start = datetime(2026, 4, 22, tzinfo=timezone.utc)
 # t_final = datetime(2026, 4, 18, tzinfo=timezone.utc)
@@ -28,7 +29,7 @@ t_final = datetime(2026, 1, 1, tzinfo=timezone.utc)
 while t_start > t_final:
     logger.info(f'Refreshing from {t_start.isoformat()}...')
     t_end = t_start
-    t_start = t_end - timedelta(days=7)
+    t_start = t_end - timedelta(days=1)
 
     stmt = text(f"""
     INSERT INTO gridworks.cached_hourly_data
