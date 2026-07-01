@@ -10,8 +10,9 @@ from gw_data.config import Settings
 GW_SCHEMA = "gridworks"
 def include_name(name, type_, parent_names):
     if type_ == "schema":
-        # Only track migrations in your chosen schema
         return name == GW_SCHEMA
+    elif type_ == "table":
+        return name not in ['cached_hourly_data']
     return True
 
 # -----------------------------------------------------------------------------
