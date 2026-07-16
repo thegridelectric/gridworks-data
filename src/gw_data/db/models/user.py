@@ -29,7 +29,7 @@ class UserSql(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
-    installation_roles: Mapped[list[UserInstallationRoleSql]] = relationship(uselist=True, lazy="joined")
+    installation_roles: Mapped[list[UserInstallationRoleSql]] = relationship(uselist=True)
 
     def __repr__(self) -> str:
         return f"User(id={self.id!r}, username={self.username!r}, is_active={self.is_active!r})"
