@@ -8,6 +8,7 @@ from gw_data.db.models.customer import CustomerSql
 from gw_data.db.models.installer import InstallerSql
 from gw_data.db.models.user import UserSql
 from gw_data.db.models.installation import InstallationSql
+from gw_data.db.models.user_installation_role import UserInstallationRoleSql
 
 from gw_data.db.models.reading_channel import ReadingChannelSql
 from gw_data.db.models.message import MessageSql
@@ -31,6 +32,7 @@ __all__ = [
     "InstallerSql",
     "UserSql",
     "InstallationSql",
+    "UserInstallationRoleSql",
     "ReadingChannelSql",
     "MessageSql",
     "ReadingSql"

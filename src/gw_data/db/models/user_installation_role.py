@@ -23,7 +23,6 @@ class UserInstallationRoleSql(Base):
     installations: Mapped[list[InstallationSql]] = relationship(
         "InstallationSql",
         uselist=True,
-        lazy="joined",
         primaryjoin="or_(InstallationSql.id==UserInstallationRoleSql.installation_id, UserInstallationRoleSql.installation_id == None)"
     )
 
