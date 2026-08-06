@@ -1,10 +1,9 @@
 metadata:
   generated_from: indexes/public_registry.yaml
-  generated_at: '2026-05-18T22:35:28Z'
+  generated_at: '2026-08-06T15:14:37Z'
   note: Transitive closure of initial_targets
 initial_targets:
-- position.point.gt:000
-- g.node.gt:004
+- g.node.gt:006
 - base.g.node.class:000
 - g.node.status:000
 worklist:
@@ -22,8 +21,5 @@ worklist:
         path: definitions/enums/g.node.status/000.yaml
   types:
     g.node.gt:
-      '004':
-        path: definitions/types/g.node.gt/004.yaml
-    position.point.gt:
-      '000':
-        path: definitions/types/position.point.gt/000.yaml
+      '006':
+        path: definitions/types/g.node.gt/006.yaml

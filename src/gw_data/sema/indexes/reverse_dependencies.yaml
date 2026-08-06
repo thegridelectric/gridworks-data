@@ -6,16 +6,15 @@ enums:
   base.g.node.class:
     '000':
       used_by:
-      - g.node.gt:004
+      - g.node.gt:006
   g.node.status:
     '000':
       used_by:
-      - g.node.gt:004
+      - g.node.gt:006
 formats:
   left.right.dot:
     used_by:
-    - g.node.gt:004
+    - g.node.gt:006
   uuid4.str:
     used_by:
-    - g.node.gt:004
-    - position.point.gt:000
+    - g.node.gt:006

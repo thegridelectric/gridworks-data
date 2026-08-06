@@ -10,15 +10,10 @@
 
 types:
   g.node.gt:
-    latest_version: '004'
+    latest_version: '006'
     versioning_strategy: literal
     versions:
-      '004': definitions/types/g.node.gt/004.yaml
-  position.point.gt:
-    latest_version: '000'
-    versioning_strategy: literal
-    versions:
-      '000': definitions/types/position.point.gt/000.yaml
+      '006': definitions/types/g.node.gt/006.yaml
 enums:
   base.g.node.class:
     enum_type: versioned

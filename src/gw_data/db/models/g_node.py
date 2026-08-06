@@ -10,16 +10,13 @@ from sqlalchemy import (
     String,
     Enum,
     DateTime,
-    ForeignKey,
 )
 from sqlalchemy.orm import (
     Mapped,
     mapped_column,
-    relationship,
 )
 
 from gw_data.db.models._base import Base
-from gw_data.db.models.position_point import PositionPointSql
 from gw_data.sema.enums import BaseGNodeClass, GNodeStatus
 
 class GNodeSql(Base):
@@ -40,10 +37,13 @@ class GNodeSql(Base):
         Enum(GNodeStatus, name="g_node_status", inherit_schema=True)
     )
 
+    # The registry's opaque location identity, projected verbatim. gw_data
+    # holds no position content — plaintext never (PII stays out of the
+    # analytics database) and ciphertext deliberately not either: location
+    # data lives with the registry; the audit trail in the persistent store.
     position_point_id: Mapped[Optional[uuid.UUID]] = mapped_column(
-        ForeignKey("position_points.id"), nullable=True
+        Uuid, nullable=True
     )
-    position_point: Mapped[Optional[PositionPointSql]] = relationship()
 
     display_name: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
