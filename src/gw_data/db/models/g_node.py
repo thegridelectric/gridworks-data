@@ -10,16 +10,13 @@ from sqlalchemy import (
     String,
     Enum,
     DateTime,
-    ForeignKey,
 )
 from sqlalchemy.orm import (
     Mapped,
     mapped_column,
-    relationship,
 )
 
 from gw_data.db.models._base import Base
-from gw_data.db.models.position_point import PositionPointSql
 from gw_data.sema.enums import BaseGNodeClass, GNodeStatus
 
 class GNodeSql(Base):
@@ -40,12 +37,22 @@ class GNodeSql(Base):
         Enum(GNodeStatus, name="g_node_status", inherit_schema=True)
     )
 
+    # The registry's opaque location identity, projected verbatim. gw_data
+    # holds no position content — plaintext never (PII stays out of the
+    # analytics database) and ciphertext deliberately not either: location
+    # data lives with the registry; the audit trail in the persistent store.
     position_point_id: Mapped[Optional[uuid.UUID]] = mapped_column(
-        ForeignKey("position_points.id"), nullable=True
+        Uuid, nullable=True
     )
-    position_point: Mapped[Optional[PositionPointSql]] = relationship()
 
     display_name: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+
+    # The registry's clock (the forest broadcast's SendTimeMs) when this
+    # row's state was asserted — the do-not-regress guard's per-row memory:
+    # a projection write with an older send time is skipped.
+    sent_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
