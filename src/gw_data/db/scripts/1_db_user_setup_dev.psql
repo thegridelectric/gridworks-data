@@ -1,32 +1,26 @@
--- The following needs to be done by a powerful role (like postgresql or tsdbadmin), and doesn't need a specific database connection
+-- LOCAL DEV ONLY. Same roles as 1_db_user_setup.psql, created
+-- non-interactively with password = role name, so that every GridWorks
+-- consumer's default db_url works against the local container with no
+-- .env. Never run against a shared or production server.
 
--- Basic security config
 REVOKE CONNECT ON DATABASE tsdb FROM PUBLIC;
 
-CREATE USER gw_admin;
+CREATE USER gw_admin PASSWORD 'gw_admin';
 GRANT ALL ON DATABASE tsdb TO gw_admin;
-\password gw_admin
 
-CREATE USER gw_journalkeeper;
+CREATE USER gw_journalkeeper PASSWORD 'gw_journalkeeper';
 GRANT CONNECT ON DATABASE tsdb TO gw_journalkeeper;
-\password gw_journalkeeper
 
-CREATE USER gw_visualizer;
+CREATE USER gw_visualizer PASSWORD 'gw_visualizer';
 GRANT CONNECT ON DATABASE tsdb TO gw_visualizer;
-\password gw_visualizer
 
--- Read-only roles, one per consumer so pg_stat_activity tells them apart
--- and each can be timed out or revoked alone. Statement timeouts keep a
--- runaway query from holding the journal.
-CREATE USER gw_alerts;
+CREATE USER gw_alerts PASSWORD 'gw_alerts';
 GRANT CONNECT ON DATABASE tsdb TO gw_alerts;
 ALTER ROLE gw_alerts SET statement_timeout = '2min';
-\password gw_alerts
 
-CREATE USER gw_analyst;
+CREATE USER gw_analyst PASSWORD 'gw_analyst';
 GRANT CONNECT ON DATABASE tsdb TO gw_analyst;
 ALTER ROLE gw_analyst SET statement_timeout = '2min';
-\password gw_analyst
 
 -- Statement timeouts: a runaway query kills itself, not the journal.
 ALTER ROLE gw_visualizer    SET statement_timeout = '10s';
