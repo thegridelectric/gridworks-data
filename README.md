@@ -62,13 +62,17 @@ Run `1_db_user_setup.psql` as follows to create the users we need. This script c
 * Again, replace `<PORT>` with your mapped host port.
 * Again, you'll be prompted for the `postgres` user password.
 
-This script creates three user roles: `gw_admin` (full ownership), `gw_journalkeeper` (insert/update/delete), and `gw_visualizer` (select-only).
+This script creates five user roles, named by consumer: `gw_admin` (full ownership), `gw_journalkeeper` (insert/update/delete), and three select-only roles — `gw_visualizer` (the web API), `gw_alerts` (gwalert), `gw_analyst` (people and ad-hoc analysis) — with role-level statement timeouts (10 s for the two services, 2 min for the readers; long jobs use `SET LOCAL statement_timeout` per transaction).
 
-**Note: the script uses `psql`'s interactive `\password` meta-command three times** (once for each user). It must be run **interactively** — it will prompt for each password as it runs and cannot be piped or run via CI:
+**Note: the script uses `psql`'s interactive `\password` meta-command five times** (once for each user). It must be run **interactively** — it will prompt for each password as it runs and cannot be piped or run via CI:
 
 You'll be prompted for new passwords for each of the users. Pick whatever you like and record them somewhere.
 
-For non-interactive setups (CI, scripted bootstraps), apply the equivalent SQL with explicit passwords; see the script as the canonical reference.
+**Local dev convention: password = role name.** For the local container, run `1_db_user_setup_dev.psql` instead — it creates the same five roles non-interactively, each with password = role name (`gw_admin`/`gw_admin`, …):
+
+    psql -d "postgresql://127.0.0.1:<PORT>/" -U postgres -f src/gw_data/db/scripts/1_db_user_setup_dev.psql
+
+Consumers of this database (journalkeeper, gwalert, …) ship default `db_url`s that assume this convention, so a fresh checkout runs against the local container with no `.env`. Never use it on a shared or production server; the interactive script above is the production path.
 
 **Reset shortcut:** if your local DB ever gets into a weird state, you can wipe it and start over with:
 
