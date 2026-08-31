@@ -34,7 +34,7 @@ jobs:
         uses: astral-sh/setup-uv@v6
         with:
           python-version: "3.12"
-          enable-cache: true
+          enable-cache: false
 
       - name: Check if there is a parent commit
         id: check-parent-commit
