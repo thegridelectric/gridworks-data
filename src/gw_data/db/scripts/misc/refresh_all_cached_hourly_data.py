@@ -19,8 +19,8 @@ db_session = db_sessionmaker()
 
 
 # t_start = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
-t_start = datetime(2026, 6, 1, tzinfo=timezone.utc)
-t_final = datetime(2026, 1, 31, tzinfo=timezone.utc)
+t_start = datetime(2026, 1, 9, tzinfo=timezone.utc)
+t_final = datetime(2024, 10, 13, tzinfo=timezone.utc)
 
 # t_start = datetime(2026, 4, 22, tzinfo=timezone.utc)
 # t_final = datetime(2026, 4, 18, tzinfo=timezone.utc)
