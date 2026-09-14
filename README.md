@@ -4,6 +4,10 @@ This project contains code related to working with databases in the GridWorks ec
 
 Our platform is PostgreSQL, with the TimescaleDB (+toolkit) extensions for efficiently handling time-series data.
 
+## Not part of the production control path
+
+This database, and everything that writes to it (the journal keeper, the web app's read paths), is an observability layer: a downstream recorder of what the production system emits. The production control system — the SCADA in each house, its LTN, the MarketMaker — never reads this database to make a control decision, and keeps running unaffected when it is down, slow, or in the middle of a migration. Each production node owns its own state locally; heavy analysis over a node's data is sent out from the node to a stateless service, never pulled from here.
+
 ## Prerequisites
 
 * **Docker Engine** — to run PostgreSQL+TimescaleDB locally.
