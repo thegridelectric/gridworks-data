@@ -6,9 +6,7 @@ from pydantic import BeforeValidator
 
 
 # --- patterns ---
-LEFT_RIGHT_DOT_PATTERN = re.compile(
-    r"^[a-z][a-z0-9]*(\.[a-z0-9]+)*$"
-)
+LEFT_RIGHT_DOT_PATTERN = re.compile(r"^[a-z][a-z0-9]*(\.[a-z0-9]+)*$")
 
 UUID4_STR_PATTERN = re.compile(
     r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"

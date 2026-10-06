@@ -4,18 +4,11 @@
 
 types:
   g.node.gt:
-    latest_version: "004"
+    latest_version: "006"
     versioning_strategy: "literal"
     versions:
-      "004":
-        summary: "Baseline runtime version (no prior version tracked)."
-
-  position.point.gt:
-    latest_version: "000"
-    versioning_strategy: "literal"
-    versions:
-      "000":
-        summary: "Initial Sema version"
+      "006":
+        summary: "- Axiom 2 (PhysicalGNodeLocations) becomes activation-conditioned: PositionPointId is mandatory only when Status is Active — a Pending physical GNode may be locationless"
 
 enums:
   base.g.node.class:

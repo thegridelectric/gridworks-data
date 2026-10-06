@@ -9,6 +9,7 @@ from __future__ import annotations
 import uuid
 
 from datetime import datetime
+from typing import Optional
 
 from sqlalchemy import (
     Uuid,
@@ -45,6 +46,13 @@ class ConnectivityEdgeSql(Base):
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
+    )
+
+    # The registry's clock (the forest broadcast's SendTimeMs) when this
+    # row's state was asserted — the do-not-regress guard's per-row memory:
+    # a projection write with an older send time is skipped.
+    sent_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
     )
 
     __table_args__ = (

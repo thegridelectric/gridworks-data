@@ -1,6 +1,5 @@
 """List of all the models"""
 
-from gw_data.db.models.position_point import PositionPointSql
 from gw_data.db.models.g_node import GNodeSql
 from gw_data.db.models.connectivity_edge import ConnectivityEdgeSql
 
@@ -25,7 +24,6 @@ from gw_data.db.models.reading import ReadingSql
 # import message
 # import reading
 __all__ = [
-    "PositionPointSql",
     "GNodeSql",
     "ConnectivityEdgeSql",
     "CustomerSql",
