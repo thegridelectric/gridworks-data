@@ -1,6 +1,6 @@
 [project]
 name = "gw_data"
-version = "0.4.0"
+version = "0.5.0"
 description = "Gridworks Data Infrastructure"
 readme = "README.md"
 authors = [
@@ -27,4 +27,9 @@ build-backend = "hatchling.build"
 [dependency-groups]
 dev = [
     "passlib>=1.7.4",
+    "pytest>=8.0",
+    "testcontainers>=4.0",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
