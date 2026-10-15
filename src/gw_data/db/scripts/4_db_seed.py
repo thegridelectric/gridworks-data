@@ -1,6 +1,5 @@
 import csv
 import dotenv
-import json
 import os
 import uuid
 
@@ -13,7 +12,7 @@ from gw_data.config import Settings
 from gw_data.db.models.user import UserSql
 from gw_data.db.models.user_installation_role import UserInstallationRoleSql
 from gw_data.sema.enums import BaseGNodeClass, GNodeStatus
-from gw_data.db.models import GNodeSql, CustomerSql, InstallerSql, InstallationSql
+from gw_data.db.models import GNodeSql
 
 
 dotenv.load_dotenv()
@@ -23,24 +22,18 @@ engine = create_engine(settings.db_url.get_secret_value(), echo=True)
 db_sessionmaker = sessionmaker(bind=engine)
 db_session = db_sessionmaker()
 
-default_installer = InstallerSql(
-    id = uuid.uuid4(),
-    info = json.dumps({
-        "company_name": "Millinocket Heating Installers"
-    })
-)
-db_session.add(default_installer)
-
-beech_id = None
+beech_ta_id = None
 file_path = os.path.join(os.path.dirname(__file__), './seed_data/homes.csv')
 with open(file_path, newline='') as csvfile:
     csv_reader = csv.reader(csvfile, delimiter=',', quotechar='"')
     next(csv_reader) # Skip the header row
     for row in csv_reader:
         # "short_alias","address","primary_contact","secondary_contact","hardware_layout","unique_id","g_node_alias","alert_status","representation_status","scada_ip_address","scada_git_commit","house_parameters","created_at"
-        (short_alias, address_json, primary_contact_json, secondary_contact_json, hardware_layout_json, unique_id, g_node_alias, alert_status_json, representation_status_json, scada_ip_address, scada_git_commit, house_parameters_json, created_at) = row
+        # Only the aliases are used: the house is a pair of registry nodes, the
+        # LeafTransactiveNode and its TerminalAsset. Nothing about a person is seeded.
+        (short_alias, _address, _primary, _secondary, _layout, _unique_id, g_node_alias, _alert, _repr, _ip, _commit, _params, created_at) = row
 
-        g_node = GNodeSql(
+        ltn = GNodeSql(
             id = uuid.uuid4(),
             alias = g_node_alias,
             base_class = None,
@@ -49,34 +42,19 @@ with open(file_path, newline='') as csvfile:
             display_name = None,
             created_at = created_at
         )
-        db_session.add(g_node)
-
-        customer = CustomerSql(
+        ta = GNodeSql(
             id = uuid.uuid4(),
-            primary_contact = json.loads(primary_contact_json),
-            secondary_contact = json.loads(secondary_contact_json),
+            alias = g_node_alias + ".ta",
+            base_class = None,
+            g_node_class = BaseGNodeClass.TerminalAsset,
+            status = GNodeStatus.Active,
+            display_name = short_alias.title() + " TerminalAsset",
+            created_at = created_at
         )
-        db_session.add(customer)
-
-        installation = InstallationSql(
-            id = uuid.uuid4(),
-            g_node_id = g_node.id,
-            display_name = short_alias,
-            customer_id = customer.id,
-            installer_id = default_installer.id,
-            address = json.loads(address_json),
-            alert_status = json.loads(alert_status_json),
-            hardware_layout = json.loads(hardware_layout_json),
-            representation_status = json.loads(representation_status_json),
-            house_parameters = json.loads(house_parameters_json),
-            scada_ip_address = scada_ip_address,
-            scada_git_commit = scada_git_commit
-        )    
-
-        if installation.display_name == 'beech':
-            beech_id = installation.id
-
-        db_session.add(installation)
+        db_session.add(ltn)
+        db_session.add(ta)
+        if short_alias == 'beech':
+            beech_ta_id = ta.id
 
 
 gbo_pwd_context = CryptContext(
@@ -123,7 +101,7 @@ db_session.add(UserInstallationRoleSql(
 db_session.add(UserInstallationRoleSql(
     user_id = beech_user.id,
     role = "owner",
-    installation_id = beech_id
+    ta_g_node_id = beech_ta_id
 ))
 
 db_session.commit()

@@ -109,7 +109,7 @@ Now we can run `3_db_alembic_upgrade.sh` as follows:
 
     `sh src/gw_data/db/scripts/3_db_alembic_upgrade.sh`
 
-This should create 12 tables in the `gridworks` schema: `alembic_version`, `connectivity_edges`, `customers`, `g_nodes`, `installations`, `installers`, `messages`, `position_points`, `reading_channels`, `readings`, `user_installation_roles`, `users`.
+This should create 8 tables in the `gridworks` schema: `alembic_version`, `connectivity_edges`, `g_nodes`, `messages`, `reading_channels`, `readings`, `user_installation_roles`, `users`. Nothing about a person is in this database: customer contact data and addresses live in the private customer store, keyed by the house's TerminalAsset GNodeId.
 
 Verify with `psql -d "postgresql://<SERVER>:<PORT>/tsdb" -U gw_admin -c "\dt gridworks.*"`.
 
@@ -119,7 +119,7 @@ With the database created, `gw_admin` ready, and `.env` filled in, you can seed 
 
     uv run python ./src/gw_data/db/scripts/1_db_seed.py
 
-**Note: the seed script is also interactive** — it uses Python's `getpass` to prompt for passwords for two seeded users (`admin` and `beech-user`). It must be run from a real terminal (no piping). The seed populates a small set of dev users, a customer, an installation, and one g_node.
+**Note: the seed script is also interactive** — it uses Python's `getpass` to prompt for passwords for two seeded users (`admin` and `beech-user`). It must be run from a real terminal (no piping). The seed populates a small set of dev users and, per house, the LeafTransactiveNode and TerminalAsset g_nodes.
 
 In the future we will have a more comprehensive seeding process that will ingest some actual message data.
 
