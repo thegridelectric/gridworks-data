@@ -57,6 +57,7 @@ def fill_before_state(conn) -> None:
 
 
 def test_roles_rekey_and_tables_drop(alembic_config, engine):
+    command.downgrade(alembic_config, "base")
     command.upgrade(alembic_config, BEFORE)
     with engine.connect() as conn:
         fill_before_state(conn)
