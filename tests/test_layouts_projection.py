@@ -12,7 +12,9 @@ TA = uuid.uuid4()
 
 
 def test_layouts_table_holds_one_row_per_terminal_asset(alembic_config, engine):
-    command.upgrade(alembic_config, BEFORE)
+    # From wherever the session left the chain: to head, then back below this migration.
+    command.upgrade(alembic_config, "head")
+    command.downgrade(alembic_config, BEFORE)
     assert "layouts" not in inspect(engine).get_table_names(schema="gridworks")
 
     command.upgrade(alembic_config, "head")
