@@ -109,7 +109,7 @@ Now we can run `3_db_alembic_upgrade.sh` as follows:
 
     `sh src/gw_data/db/scripts/3_db_alembic_upgrade.sh`
 
-This should create 9 tables in the `gridworks` schema: `alembic_version`, `connectivity_edges`, `g_nodes`, `layouts`, `messages`, `reading_channels`, `readings`, `user_installation_roles`, `users`. Nothing about a person is in this database: customer contact data and addresses live in the private customer store, keyed by the house's TerminalAsset GNodeId.
+This should create 10 tables in the `gridworks` schema: `alembic_version`, `connectivity_edges`, `g_nodes`, `house_operating_status`, `layouts`, `messages`, `reading_channels`, `readings`, `user_installation_roles`, `users`. Nothing about a person is in this database: customer contact data and addresses live in the private customer store, keyed by the house's TerminalAsset GNodeId.
 
 Verify with `psql -d "postgresql://<SERVER>:<PORT>/tsdb" -U gw_admin -c "\dt gridworks.*"`.
 
