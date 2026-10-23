@@ -33,9 +33,14 @@ class ReadingChannelSql(Base):
     unit_type: Mapped[str] = mapped_column(String, nullable=False)
     channel_type: Mapped[str] = mapped_column(String, nullable=False)
     deactivated_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+    # The layout's channel Id for the row's (terminal asset, name, unit): the
+    # lineage key, shared by a renamed channel's rows. NULL when no layout Id
+    # names the pair (a state-machine pseudo row; a unit history gave no Id).
+    channel_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, nullable=True)
 
     __table_args__ = (
         Index("terminal_asset_alias", "name"),
+        Index("ix_reading_channels_channel_id", "channel_id"),
         UniqueConstraint(
             "terminal_asset_alias",
             "name",
@@ -46,7 +51,7 @@ class ReadingChannelSql(Base):
     )
 
     def __repr__(self):
-        active_status = f"deactivated {self.deactivated_date.isoformat()}" if self.self.deactivated_date is not None else "active"
+        active_status = f"deactivated {self.deactivated_date.isoformat()}" if self.deactivated_date is not None else "active"
         return (
             f"<ReadingChannelSql(name='{self.name}', "
             f"unit='{self.unit}', terminal asset={self.terminal_asset_alias.split(".")[-2]}, [{active_status}])>"
@@ -54,7 +59,7 @@ class ReadingChannelSql(Base):
         )
 
     def __str__(self):
-        active_status = f"deactivated {self.deactivated_date.isoformat()}" if self.self.deactivated_date is not None else "active"
+        active_status = f"deactivated {self.deactivated_date.isoformat()}" if self.deactivated_date is not None else "active"
         return (
             f"ReadingChannelSql(name:{self.name},"
             f"unit: {self.unit}, terminal asset: {self.terminal_asset_alias.split(".")[-2]}, [{active_status}])"
