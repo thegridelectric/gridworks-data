@@ -1,5 +1,10 @@
 enums:
   base.g.node.class: base.g.node.class
   g.node.status: g.node.status
+  gw1.quantity: gw1.quantity
+  gw1.unit: gw1.unit
+  spaceheat.telemetry.name: spaceheat.telemetry.name
 types:
   g.node.gt: g.node.gt
+  gw1.unit.quantity.projection: gw1.unit.quantity.projection
+  spaceheat.telemetry.quantity.projection: spaceheat.telemetry.quantity.projection

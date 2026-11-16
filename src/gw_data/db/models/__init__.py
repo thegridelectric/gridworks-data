@@ -11,6 +11,7 @@ from gw_data.db.models.user_installation_role import UserInstallationRoleSql
 from gw_data.db.models.reading_channel import ReadingChannelSql
 from gw_data.db.models.message import MessageSql
 from gw_data.db.models.reading import ReadingSql
+from gw_data.db.models.unit_scale import UnitScaleSql
 
 
 __all__ = [
@@ -22,5 +23,6 @@ __all__ = [
     "UserInstallationRoleSql",
     "ReadingChannelSql",
     "MessageSql",
-    "ReadingSql"
+    "ReadingSql",
+    "UnitScaleSql",
 ]

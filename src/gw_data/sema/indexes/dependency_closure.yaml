@@ -12,4 +12,20 @@ types:
       - uuid4.str
       types: []
       versionless_types: []
+  gw1.unit.quantity.projection:
+    '001':
+      enums:
+      - gw1.quantity:003
+      - gw1.unit:003
+      formats: []
+      types: []
+      versionless_types: []
+  spaceheat.telemetry.quantity.projection:
+    '001':
+      enums:
+      - gw1.quantity:003
+      - spaceheat.telemetry.name:007
+      formats: []
+      types: []
+      versionless_types: []
 versionless_types: {}
