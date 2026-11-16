@@ -32,7 +32,7 @@ AS $BODY$
             SELECT
                 terminal_asset_alias,
                 time_bucket AS time_bucket_1s,
-                (AVG (value) FILTER (WHERE channel_name='primary-flow' AND unit='GpmTimes100') / 100) AS primary_flow_gpm,
+                (AVG (value) FILTER (WHERE channel_name='primary-flow' AND unit IN ('GpmTimes100', 'GpmX100')) / 100) AS primary_flow_gpm,
                 (AVG (value) FILTER (WHERE channel_name='hp-lwt' AND unit='WaterTempCTimes1000') / 1000) AS hp_lwt_c,
                 (AVG (value) FILTER (WHERE channel_name='hp-ewt' AND unit='WaterTempCTimes1000') / 1000) AS hp_ewt_c,
                 (AVG (value) FILTER (WHERE channel_name='dist-flow' AND unit='GpmTimes100') / 100) AS dist_flow_gpm,
