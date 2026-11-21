@@ -1,4 +1,4 @@
-CREATE FUNCTION gridworks.calc_energy_1hr(
+CREATE OR REPLACE FUNCTION gridworks.calc_energy_1hr(
 	t_start timestamp with time zone,
 	t_end timestamp with time zone)
     RETURNS TABLE(
@@ -29,25 +29,29 @@ AS $BODY$
                 store_charge_discharge_0_1 * primary_flow_gpm
             ) * (store_charge_discharge_0_1 * 2 - 1) * (store_hot_pipe_c - store_cold_pipe_c) * 9 / 5 / 3410 AS store_change_kw
         FROM (
+            -- A reading is selected by channel name and quantity; its unit_scale
+            -- row says what the stored integer is, so a channel recorded in either
+            -- unit enum, in any era, reads as the same quantity.
             SELECT
-                terminal_asset_alias,
-                time_bucket AS time_bucket_1s,
-                (AVG (value) FILTER (WHERE channel_name='primary-flow' AND unit IN ('GpmTimes100', 'GpmX100')) / 100) AS primary_flow_gpm,
-                (AVG (value) FILTER (WHERE channel_name='hp-lwt' AND unit='WaterTempCTimes1000') / 1000) AS hp_lwt_c,
-                (AVG (value) FILTER (WHERE channel_name='hp-ewt' AND unit='WaterTempCTimes1000') / 1000) AS hp_ewt_c,
-                (AVG (value) FILTER (WHERE channel_name='dist-flow' AND unit='GpmTimes100') / 100) AS dist_flow_gpm,
-                (AVG (value) FILTER (WHERE channel_name='dist-swt' AND unit='WaterTempCTimes1000') / 1000) AS dist_swt_c,
-                (AVG (value) FILTER (WHERE channel_name='dist-rwt' AND unit='WaterTempCTimes1000') / 1000) AS dist_rwt_c,
-                (AVG (value) FILTER (WHERE channel_name='store-flow' AND unit='GpmTimes100') / 100) AS store_flow_gpm,
-                (AVG (value) FILTER (WHERE channel_name='store-hot-pipe' AND unit='WaterTempCTimes1000') / 1000) AS store_hot_pipe_c,
-                (AVG (value) FILTER (WHERE channel_name='store-cold-pipe' AND unit='WaterTempCTimes1000') / 1000) AS store_cold_pipe_c,
-                (AVG (value) FILTER (WHERE channel_name='charge-discharge-relay3')) AS store_charge_discharge_0_1
+                r.terminal_asset_alias,
+                r.time_bucket AS time_bucket_1s,
+                AVG (gridworks.in_unit(r.value, us.scale, us.base_unit, 'gpm')) FILTER (WHERE r.channel_name='primary-flow' AND us.quantity='FlowRate') AS primary_flow_gpm,
+                AVG (gridworks.in_unit(r.value, us.scale, us.base_unit, 'C')) FILTER (WHERE r.channel_name='hp-lwt' AND us.quantity='Temperature') AS hp_lwt_c,
+                AVG (gridworks.in_unit(r.value, us.scale, us.base_unit, 'C')) FILTER (WHERE r.channel_name='hp-ewt' AND us.quantity='Temperature') AS hp_ewt_c,
+                AVG (gridworks.in_unit(r.value, us.scale, us.base_unit, 'gpm')) FILTER (WHERE r.channel_name='dist-flow' AND us.quantity='FlowRate') AS dist_flow_gpm,
+                AVG (gridworks.in_unit(r.value, us.scale, us.base_unit, 'C')) FILTER (WHERE r.channel_name='dist-swt' AND us.quantity='Temperature') AS dist_swt_c,
+                AVG (gridworks.in_unit(r.value, us.scale, us.base_unit, 'C')) FILTER (WHERE r.channel_name='dist-rwt' AND us.quantity='Temperature') AS dist_rwt_c,
+                AVG (gridworks.in_unit(r.value, us.scale, us.base_unit, 'gpm')) FILTER (WHERE r.channel_name='store-flow' AND us.quantity='FlowRate') AS store_flow_gpm,
+                AVG (gridworks.in_unit(r.value, us.scale, us.base_unit, 'C')) FILTER (WHERE r.channel_name='store-hot-pipe' AND us.quantity='Temperature') AS store_hot_pipe_c,
+                AVG (gridworks.in_unit(r.value, us.scale, us.base_unit, 'C')) FILTER (WHERE r.channel_name='store-cold-pipe' AND us.quantity='Temperature') AS store_cold_pipe_c,
+                AVG (r.value) FILTER (WHERE r.channel_name='charge-discharge-relay3') AS store_charge_discharge_0_1
             FROM gridworks.retrieve_readings_1s(
                 t_start => t_start,
                 t_end => t_end, 
                 channels => ARRAY['hp-ewt','hp-lwt', 'primary-flow', 'dist-swt', 'dist-rwt', 'dist-flow', 'charge-discharge-relay3', 'store-hot-pipe', 'store-cold-pipe', 'store-flow']
-            )
-            GROUP BY terminal_asset_alias,time_bucket
+            ) AS r
+            LEFT JOIN gridworks.unit_scale us ON us.unit_type = r.unit_type AND us.unit = r.unit
+            GROUP BY r.terminal_asset_alias, r.time_bucket
         )
     )
         

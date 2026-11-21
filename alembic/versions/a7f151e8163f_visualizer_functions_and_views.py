@@ -38,8 +38,8 @@ def upgrade() -> None:
         'create_view_readings_1hr.sql',
         'create_policy_view_readings_1hr.sql',
         'create_udf_retrieve_readings_1s.sql',
-        'create_udf_calc_energy_1hr.sql',
-        'create_udf_calc_hourly_data.sql',
+        # calc_energy_1hr and calc_hourly_data join gridworks.unit_scale and
+        # are created by the migration that follows that table (c5d7e9f2a4b6).
         'create_table_cached_hourly_data.sql',
         'create_proc_refresh_cached_hourly_data.sql'
     ]:
@@ -66,9 +66,7 @@ def downgrade() -> None:
     op.execute("SELECT delete_job((SELECT job_id FROM timescaledb_information.jobs WHERE proc_schema = 'gridworks' AND proc_name = 'refresh_cached_hourly_data'));")
     op.execute('DROP PROCEDURE gridworks.refresh_cached_hourly_data;')
     op.execute('DROP TABLE gridworks.cached_hourly_data;')
-    op.execute('DROP FUNCTION gridworks.calc_hourly_data;')
     op.execute('DROP MATERIALIZED VIEW gridworks.readings_1hr;')
     op.execute('DROP FUNCTION gridworks.retrieve_readings_1s(timestamp with time zone, timestamp with time zone, text[]);')
-    op.execute('DROP FUNCTION gridworks.calc_energy_1hr(timestamp with time zone, timestamp with time zone);')
     op.execute('DROP FUNCTION gridworks.c2f(float)')
     op.execute('DROP FUNCTION gridworks.f2c(float)')

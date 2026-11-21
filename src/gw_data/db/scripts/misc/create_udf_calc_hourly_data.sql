@@ -1,4 +1,4 @@
-CREATE FUNCTION gridworks.calc_hourly_data(
+CREATE OR REPLACE FUNCTION gridworks.calc_hourly_data(
 	t_start timestamp with time zone,
 	t_end timestamp with time zone)
     RETURNS TABLE(
@@ -75,12 +75,12 @@ AS $BODY$
             SELECT
                 terminal_asset_alias AS avg_value_ta,
                 time_bucket AS avg_value_time_bucket,
-                AVG (avg_value) FILTER (WHERE channel_name='hp-idu-pwr' AND unit='PowerW') AS hp_idu_w,
-                AVG (avg_value) FILTER (WHERE channel_name='hp-odu-pwr' AND unit='PowerW') AS hp_odu_w,
-                gridworks.C2F(AVG (avg_value) FILTER (WHERE channel_name='hp-lwt' AND unit='WaterTempCTimes1000') / 1000) AS hp_avg_lwt,
-                gridworks.C2F(AVG (avg_value) FILTER (WHERE channel_name='hp-ewt' AND unit='WaterTempCTimes1000') / 1000) AS hp_avg_ewt,
-                gridworks.C2F(AVG (avg_value) FILTER (WHERE channel_name='dist-swt' AND unit='WaterTempCTimes1000') / 1000) AS dist_avg_swt,
-                gridworks.C2F(AVG (avg_value) FILTER (WHERE channel_name='dist-rwt' AND unit='WaterTempCTimes1000') / 1000) AS dist_avg_rwt,
+                AVG (gridworks.in_unit(avg_value, scale, base_unit, 'W')) FILTER (WHERE channel_name='hp-idu-pwr' AND quantity='Power') AS hp_idu_w,
+                AVG (gridworks.in_unit(avg_value, scale, base_unit, 'W')) FILTER (WHERE channel_name='hp-odu-pwr' AND quantity='Power') AS hp_odu_w,
+                AVG (gridworks.in_unit(avg_value, scale, base_unit, 'F')) FILTER (WHERE channel_name='hp-lwt' AND quantity='Temperature') AS hp_avg_lwt,
+                AVG (gridworks.in_unit(avg_value, scale, base_unit, 'F')) FILTER (WHERE channel_name='hp-ewt' AND quantity='Temperature') AS hp_avg_ewt,
+                AVG (gridworks.in_unit(avg_value, scale, base_unit, 'F')) FILTER (WHERE channel_name='dist-swt' AND quantity='Temperature') AS dist_avg_swt,
+                AVG (gridworks.in_unit(avg_value, scale, base_unit, 'F')) FILTER (WHERE channel_name='dist-rwt' AND quantity='Temperature') AS dist_avg_rwt,
                 AVG (avg_value) FILTER (where channel_name like '%-relay3') AS relay_3_pulled_fraction,
                 AVG (avg_value) FILTER (where channel_name like '%-relay5') AS relay_5_pulled_fraction,
                 AVG (avg_value) FILTER (where channel_name like '%-relay6') AS relay_6_pulled_fraction,
@@ -93,20 +93,27 @@ AS $BODY$
                 SELECT 
                     terminal_asset_alias,
                     channel_name,
-                    unit,
+                    quantity,
+                    scale,
+                    base_unit,
                     time_bucket,
                     interpolated_average(
                         time_weight,
                         time_bucket,
                         '1 hour',
-                        LAG(time_weight) OVER (PARTITION BY terminal_asset_alias,channel_name,unit ORDER BY time_bucket),
-                        LEAD(time_weight) OVER (PARTITION BY terminal_asset_alias,channel_name,unit ORDER BY time_bucket)
+                        LAG(time_weight) OVER (PARTITION BY terminal_asset_alias,channel_name,unit_type,unit ORDER BY time_bucket),
+                        LEAD(time_weight) OVER (PARTITION BY terminal_asset_alias,channel_name,unit_type,unit ORDER BY time_bucket)
                     ) AS avg_value
                 FROM (
-                    SELECT * FROM gridworks.readings_1hr
+                    -- A reading is selected by channel name and quantity; its unit_scale
+                    -- row says what the stored integer is, so a channel recorded in either
+                    -- unit enum, in any era, reads as the same quantity.
+                    SELECT v.*, us.quantity, us.scale, us.base_unit
+                    FROM gridworks.readings_1hr v
+                    LEFT JOIN gridworks.unit_scale us ON us.unit_type = v.unit_type AND us.unit = v.unit
                     WHERE 1=1
-                    AND time_bucket >= t_start
-                    AND time_bucket <= t_end
+                    AND v.time_bucket >= t_start
+                    AND v.time_bucket <= t_end
                 )
             )
             GROUP BY time_bucket,terminal_asset_alias
@@ -116,41 +123,45 @@ AS $BODY$
             SELECT
                 terminal_asset_alias AS first_value_ta,
                 time_bucket AS first_value_time_bucket,
-                AVG (first_val) FILTER (WHERE channel_name='buffer-depth1' AND unit='FahrenheitX100') / 100 AS buffer_depth1_start,
-                AVG (first_val) FILTER (WHERE channel_name='buffer-depth2' AND unit='FahrenheitX100') / 100 AS buffer_depth2_start,
-                AVG (first_val) FILTER (WHERE channel_name='buffer-depth3' AND unit='FahrenheitX100') / 100 AS buffer_depth3_start,
-                AVG (first_val) FILTER (WHERE channel_name='buffer-depth4' AND unit='FahrenheitX100') / 100 AS buffer_depth4_start,
-                AVG (first_val) FILTER (WHERE channel_name='tank1-depth1' AND unit='FahrenheitX100') / 100 AS tank1_depth1_start,
-                AVG (first_val) FILTER (WHERE channel_name='tank1-depth2' AND unit='FahrenheitX100') / 100 AS tank1_depth2_start,
-                AVG (first_val) FILTER (WHERE channel_name='tank1-depth3' AND unit='FahrenheitX100') / 100 AS tank1_depth3_start,
-                AVG (first_val) FILTER (WHERE channel_name='tank1-depth4' AND unit='FahrenheitX100') / 100 AS tank1_depth4_start,
-                AVG (first_val) FILTER (WHERE channel_name='tank2-depth1' AND unit='FahrenheitX100') / 100 AS tank2_depth1_start,
-                AVG (first_val) FILTER (WHERE channel_name='tank2-depth2' AND unit='FahrenheitX100') / 100 AS tank2_depth2_start,
-                AVG (first_val) FILTER (WHERE channel_name='tank2-depth3' AND unit='FahrenheitX100') / 100 AS tank2_depth3_start,
-                AVG (first_val) FILTER (WHERE channel_name='tank2-depth4' AND unit='FahrenheitX100') / 100 AS tank2_depth4_start,
-                AVG (first_val) FILTER (WHERE channel_name='tank3-depth1' AND unit='FahrenheitX100') / 100 AS tank3_depth1_start,
-                AVG (first_val) FILTER (WHERE channel_name='tank3-depth2' AND unit='FahrenheitX100') / 100 AS tank3_depth2_start,
-                AVG (first_val) FILTER (WHERE channel_name='tank3-depth3' AND unit='FahrenheitX100') / 100 AS tank3_depth3_start,
-                AVG (first_val) FILTER (WHERE channel_name='tank3-depth4' AND unit='FahrenheitX100') / 100 AS tank3_depth4_start,
-                AVG (first_val) FILTER (where channel_name = 'forecast-oat' AND unit='FahrenheitX100') / 100 AS oat_f,
-                AVG (first_val) FILTER (where channel_name = 'forecast-ws' AND unit='MilesPerHourX1000') / 1000 AS ws_mph,
-                AVG (first_val) FILTER (where channel_name = 'total-usd-per-mwh' AND unit='DollarsX1000') / 1000 AS total_usd_per_mwh,
-                AVG (first_val) FILTER (where channel_name = 'lmp-usd-per-mwh' AND unit='DollarsX1000') / 1000 AS lmp_usd_per_mwh,
-                AVG (first_val) FILTER (where channel_name = 'buffer-available-kwh' AND unit='KilowattHoursX1000') / 1000 AS buffer_available_kwh			
+                AVG (gridworks.in_unit(first_val, scale, base_unit, 'F')) FILTER (WHERE channel_name='buffer-depth1' AND quantity='Temperature') AS buffer_depth1_start,
+                AVG (gridworks.in_unit(first_val, scale, base_unit, 'F')) FILTER (WHERE channel_name='buffer-depth2' AND quantity='Temperature') AS buffer_depth2_start,
+                AVG (gridworks.in_unit(first_val, scale, base_unit, 'F')) FILTER (WHERE channel_name='buffer-depth3' AND quantity='Temperature') AS buffer_depth3_start,
+                AVG (gridworks.in_unit(first_val, scale, base_unit, 'F')) FILTER (WHERE channel_name='buffer-depth4' AND quantity='Temperature') AS buffer_depth4_start,
+                AVG (gridworks.in_unit(first_val, scale, base_unit, 'F')) FILTER (WHERE channel_name='tank1-depth1' AND quantity='Temperature') AS tank1_depth1_start,
+                AVG (gridworks.in_unit(first_val, scale, base_unit, 'F')) FILTER (WHERE channel_name='tank1-depth2' AND quantity='Temperature') AS tank1_depth2_start,
+                AVG (gridworks.in_unit(first_val, scale, base_unit, 'F')) FILTER (WHERE channel_name='tank1-depth3' AND quantity='Temperature') AS tank1_depth3_start,
+                AVG (gridworks.in_unit(first_val, scale, base_unit, 'F')) FILTER (WHERE channel_name='tank1-depth4' AND quantity='Temperature') AS tank1_depth4_start,
+                AVG (gridworks.in_unit(first_val, scale, base_unit, 'F')) FILTER (WHERE channel_name='tank2-depth1' AND quantity='Temperature') AS tank2_depth1_start,
+                AVG (gridworks.in_unit(first_val, scale, base_unit, 'F')) FILTER (WHERE channel_name='tank2-depth2' AND quantity='Temperature') AS tank2_depth2_start,
+                AVG (gridworks.in_unit(first_val, scale, base_unit, 'F')) FILTER (WHERE channel_name='tank2-depth3' AND quantity='Temperature') AS tank2_depth3_start,
+                AVG (gridworks.in_unit(first_val, scale, base_unit, 'F')) FILTER (WHERE channel_name='tank2-depth4' AND quantity='Temperature') AS tank2_depth4_start,
+                AVG (gridworks.in_unit(first_val, scale, base_unit, 'F')) FILTER (WHERE channel_name='tank3-depth1' AND quantity='Temperature') AS tank3_depth1_start,
+                AVG (gridworks.in_unit(first_val, scale, base_unit, 'F')) FILTER (WHERE channel_name='tank3-depth2' AND quantity='Temperature') AS tank3_depth2_start,
+                AVG (gridworks.in_unit(first_val, scale, base_unit, 'F')) FILTER (WHERE channel_name='tank3-depth3' AND quantity='Temperature') AS tank3_depth3_start,
+                AVG (gridworks.in_unit(first_val, scale, base_unit, 'F')) FILTER (WHERE channel_name='tank3-depth4' AND quantity='Temperature') AS tank3_depth4_start,
+                AVG (gridworks.in_unit(first_val, scale, base_unit, 'F')) FILTER (WHERE channel_name='forecast-oat' AND quantity='Temperature') AS oat_f,
+                AVG (gridworks.in_unit(first_val, scale, base_unit, 'mph')) FILTER (WHERE channel_name='forecast-ws' AND quantity='WindSpeed') AS ws_mph,
+                AVG (gridworks.in_unit(first_val, scale, base_unit, 'USD')) FILTER (WHERE channel_name='total-usd-per-mwh' AND quantity='Currency') AS total_usd_per_mwh,
+                AVG (gridworks.in_unit(first_val, scale, base_unit, 'USD')) FILTER (WHERE channel_name='lmp-usd-per-mwh' AND quantity='Currency') AS lmp_usd_per_mwh,
+                AVG (gridworks.in_unit(first_val, scale, base_unit, 'kWh')) FILTER (WHERE channel_name='buffer-available-kwh' AND quantity='Energy') AS buffer_available_kwh
                 
             FROM (
                 SELECT 
                     terminal_asset_alias,
                     channel_name,
-                    unit,
+                    quantity,
+                    scale,
+                    base_unit,
                     time_bucket,
                     first_val(time_weight) AS first_val
                 FROM (
-                    SELECT * FROM gridworks.readings_1hr
+                    SELECT v.*, us.quantity, us.scale, us.base_unit
+                    FROM gridworks.readings_1hr v
+                    LEFT JOIN gridworks.unit_scale us ON us.unit_type = v.unit_type AND us.unit = v.unit
                     WHERE 1=1
-                    AND time_bucket >= t_start
-                    AND time_bucket <= t_end
-                    ORDER BY time_bucket
+                    AND v.time_bucket >= t_start
+                    AND v.time_bucket <= t_end
+                    ORDER BY v.time_bucket
                 )
             )
             GROUP BY time_bucket,terminal_asset_alias
