@@ -5,7 +5,9 @@ derived channel (gw1.unit GpmX100). Every hour fills from its own era's
 readings: the temperatures step up at the boundary and again in the third
 hour, so a reader that extends the retired row's last value past its end,
 into the second hour or through the hourly aggregate's LAG and LEAD into
-the third, averages the two eras and fails that hour's assertions."""
+the third, averages the two eras and fails that hour's assertions.
+The third hour also has no indoor-unit power channel, a house whose heat
+pump has none, so hp_kwh_el is the outdoor unit alone."""
 
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -30,8 +32,8 @@ CHANNELS = [
     ("primary-flow", DERIVED, "GpmX100", 500, 500, 500),  # 5 gpm
     ("buffer-depth1", MEASURED, "WaterTempCTimes1000", 50_000, None, None),  # 50 C = 122 F
     ("buffer-depth1", DERIVED, "FahrenheitX100", None, 14_000, 15_000),  # 140 F, 150 F
-    ("hp-idu-pwr", MEASURED, "PowerW", 1_000, 1_000, 1_000),
-    ("hp-odu-pwr", MEASURED, "PowerW", 0, 0, 0),
+    ("hp-idu-pwr", MEASURED, "PowerW", 1_000, 1_000, None),
+    ("hp-odu-pwr", MEASURED, "PowerW", 0, 0, 2_000),
     ("charge-discharge-relay3", "relay.closed.or.open", "000", 0, 0, 0),
 ]
 
@@ -39,11 +41,11 @@ def hp_kw(lwt_c: float, ewt_c: float) -> float:
     return 500 * 5 * (lwt_c - ewt_c) * 9 / 5 / 3410
 
 
-# (hp_kwh_th, hp_avg_lwt F, hp_avg_ewt F, buffer_depth1_start F) per hour
+# (hp_kwh_el, hp_kwh_th, hp_avg_lwt F, hp_avg_ewt F, buffer_depth1_start F) per hour
 EXPECTED = {
-    HOUR_A: (hp_kw(40, 30), 104.0, 86.0, 122.0),
-    HOUR_B: (hp_kw(50, 35), 122.0, 95.0, 140.0),
-    HOUR_C: (hp_kw(60, 40), 140.0, 104.0, 150.0),
+    HOUR_A: (1.0, hp_kw(40, 30), 104.0, 86.0, 122.0),
+    HOUR_B: (1.0, hp_kw(50, 35), 122.0, 95.0, 140.0),
+    HOUR_C: (2.0, hp_kw(60, 40), 140.0, 104.0, 150.0),
 }
 
 
@@ -55,7 +57,7 @@ def two_eras(alembic_config, engine):
         for name, unit_type, unit, a, b, c in CHANNELS:
             cid = uuid.uuid4()
             # the unique key (ta, name, deactivated_date) makes the old era's row deactivated
-            deactivated = HOUR_B if b is None and c is None else None
+            deactivated = HOUR_B if b is None and c is None else HOUR_C if c is None else None
             conn.execute(
                 text(
                     "INSERT INTO gridworks.reading_channels (id, name, terminal_asset_alias, display_name, unit, unit_type, channel_type, deactivated_date) "
@@ -94,8 +96,8 @@ def test_both_eras_feed_the_hourly_columns(two_eras, engine):
         ).all()
     assert [r.time_bucket for r in rows] == [HOUR_A, HOUR_B, HOUR_C]
     for r in rows:
-        kwh_th, lwt, ewt, buffer_depth1 = EXPECTED[r.time_bucket]
-        assert r.hp_kwh_el == pytest.approx(1.0)
+        kwh_el, kwh_th, lwt, ewt, buffer_depth1 = EXPECTED[r.time_bucket]
+        assert r.hp_kwh_el == pytest.approx(kwh_el)
         assert r.hp_kwh_th == pytest.approx(kwh_th, rel=1e-3)
         assert r.hp_avg_lwt == pytest.approx(lwt)
         assert r.hp_avg_ewt == pytest.approx(ewt)
