@@ -41,7 +41,10 @@ CREATE OR REPLACE FUNCTION gridworks.calc_hourly_data(
         oat_f float,
         total_usd_per_mwh float,
         buffer_available_kwh float,
-        lmp_usd_per_mwh float
+        lmp_usd_per_mwh float,
+        ghi_w_m2 float,
+        oat_source text,
+        ws_source text
     )
     STABLE
 	LANGUAGE 'sql'
@@ -65,10 +68,22 @@ AS $BODY$
     tank3_depth1_start, tank3_depth2_start, tank3_depth3_start, tank3_depth4_start,
     relay_3_pulled_fraction, relay_5_pulled_fraction, relay_6_pulled_fraction, relay_9_pulled_fraction,
     zone1_heatcall_fraction, zone2_heatcall_fraction, zone3_heatcall_fraction, zone4_heatcall_fraction,
-    ws_mph, oat_f,
+    -- Outdoor temperature and wind are the station's observation where it
+    -- has one, the model gridpoint's where it does not, and the house's own
+    -- forecast where neither exists. The source columns name the channel
+    -- each hour's value was read from.
+    COALESCE(kmlt_ws_mph, ommillinocket_ws_mph, forecast_ws_mph) AS ws_mph,
+    COALESCE(kmlt_oat_f, ommillinocket_oat_f, forecast_oat_f) AS oat_f,
     total_usd_per_mwh,
     buffer_available_kwh,
-    lmp_usd_per_mwh
+    lmp_usd_per_mwh,
+    ghi_w_m2,
+    CASE WHEN kmlt_oat_f IS NOT NULL THEN 'kmlt-temperature'
+         WHEN ommillinocket_oat_f IS NOT NULL THEN 'ommillinocket-temperature'
+         WHEN forecast_oat_f IS NOT NULL THEN 'forecast-oat' END AS oat_source,
+    CASE WHEN kmlt_ws_mph IS NOT NULL THEN 'kmlt-windspeed'
+         WHEN ommillinocket_ws_mph IS NOT NULL THEN 'ommillinocket-windspeed'
+         WHEN forecast_ws_mph IS NOT NULL THEN 'forecast-ws' END AS ws_source
     FROM
     (
         SELECT * FROM (
@@ -143,8 +158,8 @@ AS $BODY$
                 AVG (gridworks.in_unit(first_val, scale, base_unit, 'F')) FILTER (WHERE channel_name='tank3-depth2' AND quantity='Temperature') AS tank3_depth2_start,
                 AVG (gridworks.in_unit(first_val, scale, base_unit, 'F')) FILTER (WHERE channel_name='tank3-depth3' AND quantity='Temperature') AS tank3_depth3_start,
                 AVG (gridworks.in_unit(first_val, scale, base_unit, 'F')) FILTER (WHERE channel_name='tank3-depth4' AND quantity='Temperature') AS tank3_depth4_start,
-                AVG (gridworks.in_unit(first_val, scale, base_unit, 'F')) FILTER (WHERE channel_name='forecast-oat' AND quantity='Temperature') AS oat_f,
-                AVG (gridworks.in_unit(first_val, scale, base_unit, 'mph')) FILTER (WHERE channel_name='forecast-ws' AND quantity='WindSpeed') AS ws_mph,
+                AVG (gridworks.in_unit(first_val, scale, base_unit, 'F')) FILTER (WHERE channel_name='forecast-oat' AND quantity='Temperature') AS forecast_oat_f,
+                AVG (gridworks.in_unit(first_val, scale, base_unit, 'mph')) FILTER (WHERE channel_name='forecast-ws' AND quantity='WindSpeed') AS forecast_ws_mph,
                 AVG (gridworks.in_unit(first_val, scale, base_unit, 'USD')) FILTER (WHERE channel_name='total-usd-per-mwh' AND quantity='Currency') AS total_usd_per_mwh,
                 AVG (gridworks.in_unit(first_val, scale, base_unit, 'USD')) FILTER (WHERE channel_name='lmp-usd-per-mwh' AND quantity='Currency') AS lmp_usd_per_mwh,
                 AVG (gridworks.in_unit(first_val, scale, base_unit, 'kWh')) FILTER (WHERE channel_name='buffer-available-kwh' AND quantity='Energy') AS buffer_available_kwh
@@ -171,6 +186,44 @@ AS $BODY$
             GROUP BY time_bucket,terminal_asset_alias
             ORDER BY time_bucket
         ) AS first_values ON kwh_values.time_bucket = first_value_time_bucket AND kwh_values.terminal_asset_alias = first_value_ta
+        LEFT JOIN (
+            -- The weather GNode's observed channels, read once per hour and
+            -- joined to every house. The GNode alias and the channel names are
+            -- constants here: no word yet states which station a house's hourly
+            -- weather is read from (the missing word is a house-to-station
+            -- binding; gw.weather.channel.gt names the station, not the house).
+            SELECT
+                time_bucket AS weather_time_bucket,
+                AVG (gridworks.in_unit(avg_value, scale, base_unit, 'F')) FILTER (WHERE channel_name='kmlt-temperature' AND quantity='Temperature') AS kmlt_oat_f,
+                AVG (gridworks.in_unit(avg_value, scale, base_unit, 'mph')) FILTER (WHERE channel_name='kmlt-windspeed' AND quantity='WindSpeed') AS kmlt_ws_mph,
+                AVG (gridworks.in_unit(avg_value, scale, base_unit, 'F')) FILTER (WHERE channel_name='ommillinocket-temperature' AND quantity='Temperature') AS ommillinocket_oat_f,
+                AVG (gridworks.in_unit(avg_value, scale, base_unit, 'mph')) FILTER (WHERE channel_name='ommillinocket-windspeed' AND quantity='WindSpeed') AS ommillinocket_ws_mph,
+                AVG (gridworks.in_unit(avg_value, scale, base_unit, 'W/m2')) FILTER (WHERE channel_name='ommillinocket-irradiance' AND quantity='Irradiance') AS ghi_w_m2
+            FROM (
+                SELECT
+                    channel_name,
+                    quantity,
+                    scale,
+                    base_unit,
+                    time_bucket,
+                    interpolated_average(
+                        time_weight,
+                        time_bucket,
+                        '1 hour',
+                        LAG(time_weight) OVER (PARTITION BY channel_name,unit_type,unit ORDER BY time_bucket),
+                        LEAD(time_weight) OVER (PARTITION BY channel_name,unit_type,unit ORDER BY time_bucket)
+                    ) AS avg_value
+                FROM (
+                    SELECT v.*, us.quantity, us.scale, us.base_unit
+                    FROM gridworks.readings_1hr v
+                    LEFT JOIN gridworks.unit_scale us ON us.unit_type = v.unit_type AND us.unit = v.unit
+                    WHERE v.terminal_asset_alias = 'hw1.isone.weather'
+                    AND v.time_bucket >= t_start
+                    AND v.time_bucket <= t_end
+                )
+            )
+            GROUP BY time_bucket
+        ) AS weather ON kwh_values.time_bucket = weather_time_bucket
         OFFSET 0 -- Optimization 
     )
     ORDER BY time_bucket

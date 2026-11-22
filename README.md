@@ -131,7 +131,13 @@ fractions, weather and prices that the web API's hourly download and
 hourly-electricity routes read. Every row is computed by
 `gridworks.calc_hourly_data` from `readings` through `readings_1hr` and
 `unit_scale`; the table is a cache of that function, nothing in it is
-written by hand.
+written by hand. The weather columns read the weather GNode's observed
+channels, which sit under its own alias (`hw1.isone.weather`) and are
+joined to every house by hour: `oat_f` and `ws_mph` are the KMLT
+station's observation, the model gridpoint's where the station has none,
+and the house's own forecast where neither exists; `oat_source` and
+`ws_source` name the channel each hour's value was read from; `ghi_w_m2`
+is the gridpoint's irradiance.
 
 Two things fill it:
 
@@ -157,7 +163,11 @@ Run the backfill after any migration that changes `calc_hourly_data`,
 `calc_energy_1hr`, `retrieve_readings_1s` or `unit_scale`, or that alters
 the table's columns: the job only ever revisits the last two days, and the
 function's return table and the cache table's columns must match for the
-insert to succeed.
+insert to succeed. Readings loaded into the past (an archive backfill) are
+not in `readings_1hr` until the aggregate is refreshed over their window,
+so that comes first:
+
+      CALL refresh_continuous_aggregate('gridworks.readings_1hr', '<first loaded hour>', '<last loaded hour>');
 
 ## Best Practices for Databases
 

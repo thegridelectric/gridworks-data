@@ -37,5 +37,8 @@ CREATE TABLE gridworks.cached_hourly_data (
     oat_f float,
     total_usd_per_mwh float,
     buffer_available_kwh float,
-    lmp_usd_per_mwh float    
+    lmp_usd_per_mwh float,
+    ghi_w_m2 float,
+    oat_source text,
+    ws_source text
 )

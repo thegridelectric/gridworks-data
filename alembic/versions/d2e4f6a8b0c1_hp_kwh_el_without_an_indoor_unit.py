@@ -27,6 +27,10 @@ MISC = os.path.join(os.path.dirname(__file__), "../../src/gw_data/db/scripts/mis
 
 
 def upgrade() -> None:
+    # The script states the function's current return table, which a later
+    # migration may have changed; the function is dropped so the script can
+    # create it whatever the chain's position.
+    op.execute("DROP FUNCTION IF EXISTS gridworks.calc_hourly_data(timestamp with time zone, timestamp with time zone)")
     with open(os.path.join(MISC, "create_udf_calc_hourly_data.sql")) as f:
         op.execute(f.read().strip())
 
