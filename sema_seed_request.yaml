@@ -1,6 +1,0 @@
-initial_targets:
-  types:
-    g.node.gt: {}
-  enums:
-    base.g.node.class: {}
-    g.node.status: {}

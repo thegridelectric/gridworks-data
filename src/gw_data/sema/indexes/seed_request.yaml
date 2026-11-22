@@ -1,6 +1,19 @@
+# Seed request for gridworks-data (gw_data).
+#
+# Drives `scripts/regen_sema_snapshot.sh`: `sema snapshot prepare` on this
+# file, then `sema snapshot build --package-name gw_data`, mirrored into
+# src/gw_data/sema/. The snapshot is generated; edit this seed, not it.
+#
+# g.node.gt is the registry record the g_nodes table holds. The two
+# projection words give each unit enum value its gw1.quantity, which the
+# unit_scale generator reads; their closure pulls gw1.unit,
+# spaceheat.telemetry.name and gw1.quantity.
+
 initial_targets:
   types:
     g.node.gt: {}
+    gw1.unit.quantity.projection: {}
+    spaceheat.telemetry.quantity.projection: {}
   enums:
     base.g.node.class: {}
     g.node.status: {}

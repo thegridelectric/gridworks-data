@@ -14,6 +14,16 @@ types:
     versioning_strategy: literal
     versions:
       '006': definitions/types/g.node.gt/006.yaml
+  gw1.unit.quantity.projection:
+    latest_version: '001'
+    versioning_strategy: literal
+    versions:
+      '001': definitions/types/gw1.unit.quantity.projection/001.yaml
+  spaceheat.telemetry.quantity.projection:
+    latest_version: '001'
+    versioning_strategy: literal
+    versions:
+      '001': definitions/types/spaceheat.telemetry.quantity.projection/001.yaml
 enums:
   base.g.node.class:
     enum_type: versioned
@@ -25,6 +35,21 @@ enums:
     latest_version: '000'
     versions:
       '000': definitions/enums/g.node.status/000.yaml
+  gw1.quantity:
+    enum_type: versioned
+    latest_version: '003'
+    versions:
+      '003': definitions/enums/gw1.quantity/003.yaml
+  gw1.unit:
+    enum_type: versioned
+    latest_version: '003'
+    versions:
+      '003': definitions/enums/gw1.unit/003.yaml
+  spaceheat.telemetry.name:
+    enum_type: versioned
+    latest_version: '007'
+    versions:
+      '007': definitions/enums/spaceheat.telemetry.name/007.yaml
 formats:
   left.right.dot: definitions/formats/left.right.dot.yaml
   uuid4.str: definitions/formats/uuid4.str.yaml

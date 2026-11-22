@@ -1,6 +1,6 @@
 metadata:
   registry_version: "1.0"
-  last_updated: "2026-08-06T14:35:00Z"
+  last_updated: "2026-11-16T07:20:00Z"
   maintainer: "gridworks-energy"
 
 formats:
@@ -43,6 +43,51 @@ enums:
         created: "2026-02-22T16:43:00Z"
         status: "published"
 
+  gw1.quantity:
+    latest_version: "003"
+    owner: gridworks-energy
+    enum_type: "versioned"
+    description: "High-level physical or semantic quantity classification for telemetry values."
+
+    versions:
+      "003":
+        schema_url: "https://schemas.electricity.works/enums/gw1.quantity/003"
+        created: "2026-10-15T11:35:00Z"
+        status: "published"
+        added_values:
+          - "Irradiance"
+          - "Currency"
+
+  gw1.unit:
+    latest_version: "003"
+    owner: gridworks-energy
+    enum_type: "versioned"
+    description: "Measurement-unit vocabulary used for derived channels."
+
+    versions:
+      "003":
+        schema_url: "https://schemas.electricity.works/enums/gw1.unit/003"
+        created: "2026-10-15T11:35:00Z"
+        status: "published"
+        added_values:
+          - "WattsPerSquareMeter"
+          - "MilesPerHourX10"
+          - "FahrenheitX10"
+
+  spaceheat.telemetry.name:
+    latest_version: "007"
+    owner: gridworks-energy
+    enum_type: "versioned"
+    description: "Legacy Spaceheat telemetry-name vocabulary for raw channels."
+
+    versions:
+      "007":
+        schema_url: "https://schemas.electricity.works/enums/spaceheat.telemetry.name/007"
+        created: "2024-12-06T00:00:00Z"
+        status: "published"
+        added_values:
+          - "BinaryState"
+
 types:
   g.node.gt:
     latest_version: "006"
@@ -62,3 +107,37 @@ types:
             - "g.node.status:000"
             - "left.right.dot"
             - "uuid4.str"
+
+  gw1.unit.quantity.projection:
+    latest_version: "001"
+    owner: gridworks-energy
+    versioning_strategy: "literal"
+    description: "Canonical projection from gw1.unit to gw1.quantity."
+
+    versions:
+      "001":
+        schema_url: "https://schemas.electricity.works/types/gw1.unit.quantity.projection/001"
+        created: "2026-10-15T11:35:00Z"
+        status: "published"
+        summary: "- Unit: gw1.unit 001 -> 003 - Quantity: gw1.quantity 001 -> 003 - projection.table: add DollarsX1000 -> Currency, MilesPerHourX1000 -> WindSpeed, KilowattHoursX1000 -> Energy, WattsPerSquareMeter -> Irradiance"
+        direct_dependencies:
+          structural:
+            - "gw1.quantity:003"
+            - "gw1.unit:003"
+
+  spaceheat.telemetry.quantity.projection:
+    latest_version: "001"
+    owner: gridworks-energy
+    versioning_strategy: "literal"
+    description: "Canonical projection from legacy TelemetryName encodings to gw1.quantity."
+
+    versions:
+      "001":
+        schema_url: "https://schemas.electricity.works/types/spaceheat.telemetry.quantity.projection/001"
+        created: "2026-10-15T16:00:00Z"
+        status: "published"
+        summary: "- Quantity: gw1.quantity 000 -> 003"
+        direct_dependencies:
+          structural:
+            - "gw1.quantity:003"
+            - "spaceheat.telemetry.name:007"
