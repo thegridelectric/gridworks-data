@@ -49,7 +49,11 @@ CREATE OR REPLACE FUNCTION gridworks.calc_hourly_data(
 
 AS $BODY$
     SELECT terminal_asset_alias, time_bucket,
-    (hp_idu_w + hp_odu_w) / 1000 AS hp_kwh_el,
+    -- The heat pump's electricity is whichever of its units the house has;
+    -- a house whose heat pump has no indoor unit (elm's Arctic) reads the
+    -- outdoor unit alone. Empty only when neither unit reported.
+    CASE WHEN hp_idu_w IS NULL AND hp_odu_w IS NULL THEN NULL
+         ELSE (COALESCE(hp_idu_w, 0) + COALESCE(hp_odu_w, 0)) / 1000 END AS hp_kwh_el,
     hp_kwh AS hp_kwh_th,
     dist_kwh,
     store_change_kwh,
