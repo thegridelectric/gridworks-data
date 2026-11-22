@@ -123,6 +123,42 @@ With the database created, `gw_admin` ready, and `.env` filled in, you can seed 
 
 In the future we will have a more comprehensive seeding process that will ingest some actual message data.
 
+## The cached hourly table
+
+`gridworks.cached_hourly_data` is one row per house per hour: the energies,
+average temperatures, hour-start tank temperatures, relay and heat-call
+fractions, weather and prices that the web API's hourly download and
+hourly-electricity routes read. Every row is computed by
+`gridworks.calc_hourly_data` from `readings` through `readings_1hr` and
+`unit_scale`; the table is a cache of that function, nothing in it is
+written by hand.
+
+Two things fill it:
+
+* **The scheduled job.** `gridworks.refresh_cached_hourly_data` is a
+  TimescaleDB job (migration `a7f151e8163f`) that runs every 30 minutes and
+  recomputes the last two days: delete the window, insert the function's
+  rows for it. Readings that arrive late and layout changes within two days
+  correct themselves this way.
+* **The backfill script**, for everything older than two days:
+
+      uv run python src/gw_data/db/scripts/misc/refresh_all_cached_hourly_data.py [START] [FINAL]
+
+  It reads `GW_DATA_DB_URL` from `.env` (the `gw_admin` URL, as for a
+  migration) and refills the window `FINAL <= hour < START` one day at a
+  time, newest first, deleting each day before inserting it, so a run
+  interrupted and restarted does not duplicate rows. With no arguments it
+  refills from the current hour back to 2024-10-13, the first journaled
+  hour. A day of six houses takes about six seconds on a laptop database,
+  so the full window is on the order of two hours on production; run it
+  under `nohup` with its output in a log file.
+
+Run the backfill after any migration that changes `calc_hourly_data`,
+`calc_energy_1hr`, `retrieve_readings_1s` or `unit_scale`, or that alters
+the table's columns: the job only ever revisits the last two days, and the
+function's return table and the cache table's columns must match for the
+insert to succeed.
+
 ## Best Practices for Databases
 
 The following are some best practices that we should follow when at all possible:
