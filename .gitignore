@@ -58,6 +58,7 @@ cover/
 
 # Environments
 .env
+temporary.env
 .envrc
 .venv
 env/
